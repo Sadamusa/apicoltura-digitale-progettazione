@@ -1,3 +1,4 @@
+
 # 🧭 Guida rapida: come si scrivono i requisiti (progetto “Apicoltura Digitale”)
 
 > **Obiettivo:** trasformare idee, appunti e desideri del cliente in frasi **chiare, verificabili e tracciabili** (cioè: controllabili con un test e collegabili alla loro “fonte”).  
@@ -160,29 +161,37 @@ Perché è meglio? Perché ora sappiamo **quanto spesso**, **dove finisce il dat
 - **RF-SW-05 — TM, Alert Soglia Massima**: Al superamento della temperatura di 37 °C, il sistema invia un alert.
 - **RF-SW-06 — TM, Alert Soglia Minima**: Al raggiungimento della temperatura di 30 °C, il sistema invia un alert.
 - **RF-SW-07 — TM, Frequenza di Aggiornamento**: Il sensore aggiorna la misurazione ogni 6 minuti.
-
- **RF-SW-08 — PS, Misurazione**:Il segnale analogico deve essere acquisito e convertito in valore digitale a 24 bit.
+- **RF-SW-08 — PS, Misurazione**:Il segnale analogico deve essere acquisito e convertito in valore digitale a 24 bit.
 - **RF-SW-09 — PS, Taratura**:La funzione di taratura deve esistere per fare la differenza dei pesi.
 - **RF-SW-10 — PS, Trasforma dato grezzo**:Il valore grezzo deve essere trasformato in kg.
-- **RF-SW-11 — PS, Power Management**:La modalità deep sleep viene disattivata ogni 3 ore.. **
+- **RF-SW-11 — PS, Power Management**:La modalità deep sleep viene disattivata ogni 3 ore.. 
 - **RF-SW-11 — PS, Gestione Data**:Ad ogni misurazione deve essere associata una data.
--  **RF-SW-11 — PS, Gestione ora**:Ad ogni misurazione deve essere associata un orario.
--   **RF-SW-12 — MIC Acquisizione continua**  Il microfono deve acquisire il segnale a intervalli di 10 secondi.   
--   **RF-SW-13 — MIC Intensità suono** : Si calcola il volume medio in dB per capire l'agitazione dello sciame. 
--   **RF-SW-14 —  MIC Frequenza suono** : Si calcola la frequenza per avere una misura più precisa dello stato dello sciame.
--   **RF-SW-15 —  MIC Verifica soglia**: Il microfono confronta i valori rilevati con valori di allarme. 
--   **RF-SW-16 —  MIC Notifica alert** : Se si supera una certa soglia l'apicoltore riceve una notifica.
+- **RF-SW-11 — PS, Gestione ora**:Ad ogni misurazione deve essere associata un orario.
+- **RF-SW-12 — MIC Acquisizione continua**  Il microfono deve acquisire il segnale a intervalli di 10 secondi.   
+- **RF-SW-13 — MIC Intensità suono** : Si calcola il volume medio in dB per capire l'agitazione dello sciame. 
+- **RF-SW-14 —  MIC Frequenza suono** : Si calcola la frequenza per avere una misura più precisa dello stato dello sciame.
+- **RF-SW-15 —  MIC Verifica soglia**: Il microfono confronta i valori rilevati con valori di allarme. 
+- **RF-SW-16 —  MIC Notifica alert** : Se si supera una certa soglia l'apicoltore riceve una notifica.
+- **RF-SW-17 — UM, Misurazione umidità come % nell'aria** :Il sensore misura la percentuale di umidità all'interno dell'arnia.
+- **RF-SW-18 — UM,  Tipo di dato**: il valore del sensore è ospitato in una variabile float.
+- **RF-SW-19 — UM, Timestamp**: Ad ogni misurazione è associata la data e l'ora di esecuzione (formato dd/MM/yyyy; hh:mm).
+- **RF-SW-20 — UM, Alert Soglia Massima**: Al superamento della soglia di umidità del 70% il sistema invia un alert.
+- **RF-SW-21 — UM, Alert Soglia Minima**: Al raggiungimento della soglia di umidità inferiore del 40% il sistema invia un alert.
+- **RF-SW-22 — UM, Frequenza di Aggiornamento**: Il sensore aggiorna la misurazione ogni 6 minuti.
  
 
 ### Requisiti non funzionali
-- **RNF-01 — TM, Persistenza Dati**: Il sensore salva i dati nella memoria locale dell'ESP32 in caso di assenza di connessione.
-- **RNF-02 — TM, Robustezza Ambientale**: Il sensore deve resistere a polvere, propoli e sporco.
-- **RNF-03 — TM, Facilità di Installazione**: Il sensore deve essere installato rapidamente senza disturbare le api.
+- **RNF-SW-01 — TM, Persistenza Dati**: Il sensore salva i dati nella memoria locale dell'ESP32 in caso di assenza di connessione.
+- **RNF-SW-02 — TM, Robustezza Ambientale**: Il sensore deve resistere a polvere, propoli e sporco.
+- **RNF-SW-03 — TM, Facilità di Installazione**: Il sensore deve essere installato rapidamente senza disturbare le api.
 - **RNF-SW-04 — PS, Peso max**:L'arnia pesa al massimo 70kg.
 - **RNF-SW-05 — PS, Notifica peso alto**: L'apicoltore deve ricevere un alert se il peso è troppo alto.
 - **RNF-SW-06 — PS, Notifica peso basso**: L'apicoltore deve ricevere un alert se il peso è troppo basso.
 - **RNF-SW-07 — PS, Latenza**: Il sensore impiega circa 2 secondi per misurare dopo l'accensione.
--  **RNF-SW-08 —  MIC Tempestività alert** : La notifica alert deve arrivare all'apicoltore in un tempo ragionevole.
+- **RNF-SW-08 —  MIC Tempestività alert** : La notifica alert deve arrivare all'apicoltore in un tempo ragionevole.
+- **RNF-SW-09 — UM, Persistenza Dati**: Il sensore salva i dati nella memoria locale dell'ESP32 in caso di assenza di connessione.
+- **RNF-SW-10 — UM, Robustezza Ambientale**: Il sensore deve resistere a polvere, propoli e sporco.
+- **RNF-SW-11 — UM, Facilità di Installazione**: Il sensore deve essere installato rapidamente senza disturbare le api.
 
 📎 Media consigliati:
 - Diagramma “REST API model” (per spiegare GET/POST e flusso dati).
