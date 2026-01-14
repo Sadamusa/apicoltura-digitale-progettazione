@@ -1,0 +1,6 @@
+{
+"temperatura" : float,
+"data" : date,
+"ora" : date ,
+"allert" : <String>
+}

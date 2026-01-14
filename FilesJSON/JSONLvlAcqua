@@ -1,0 +1,6 @@
+{
+"percentuale" : double,
+"data" : date,
+"ora" : date ,
+"allert" : <String>
+}
