@@ -1,6 +1,6 @@
 
 
-# 🧭 LISTA DEI REQUISITI E Guida rapida: come si scrivono i requisiti (progetto “Apicoltura Digitale”)
+# 🧭 [LISTA DEI REQUISITI](https://github.com/IIS-Franchetti-Salviani/apicoltura-digitale-progettazione/blob/main/REQUISITI.md#7-requisiti-per-i-4-gruppi-di-lavoro) E guida rapida: come si scrivono i requisiti (progetto “Apicoltura Digitale”)
 
 > **Obiettivo:** trasformare idee, appunti e desideri del cliente in frasi **chiare, verificabili e tracciabili** (cioè: controllabili con un test e collegabili alla loro “fonte”).
 > Nel nostro progetto, l’obiettivo generale è realizzare un sistema IoT per supportare l’apicoltore con dati remoti su produzione e stato dell’arnia, includendo device IoT, API/REST, base dati e infrastruttura di rete.
