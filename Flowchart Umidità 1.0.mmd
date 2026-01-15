@@ -10,17 +10,19 @@ flowchart TB
     n7 -- Vero --> n8["campione &gt; Soglia min"]
     n7 -- Falso --> n9["Invio Alert a DB"]
     n8 -- Falso --> n10["Invio Alert a DB"]
-    n6 -- Falso --> n12["Invio Alert a DB"]
     n1 --> n14["contatore = 0"]
     n14 --> n13["Contatore != 5"]
     n13 -- Vero --> n4["Lett soglia tempo (umidità)<br>TimeStamp,not null"]
     n13 -- Falso --> n1
-    n8 -- vero --> n13
-    n10 --> n13
-    n9 --> n13
-    n12 --> n13
     n4 --> n15["cont= cont+1"]
     n15 --> n5
+    n10 --> n16["Delay 6 minuti"]
+    n8 -- Vero --> n16
+    n9 --> n16
+    n12["Invio Alert a DB"] --> n16
+    n16 --> n13
+    n6 -- Falso --> n17["Salva campione e timestamp su ESP32"]
+    n17 --> n12
 
     n1@{ shape: proc}
     n5@{ shape: proc}
@@ -29,8 +31,10 @@ flowchart TB
     n8@{ shape: decision}
     n9@{ shape: proc}
     n10@{ shape: proc}
-    n12@{ shape: proc}
     n14@{ shape: proc}
     n13@{ shape: loop-limit}
     n4@{ shape: proc}
     n15@{ shape: proc}
+    n16@{ shape: delay}
+    n12@{ shape: proc}
+    n17@{ shape: proc}
