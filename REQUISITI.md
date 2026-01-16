@@ -152,10 +152,12 @@ Il database deve gestire le seguenti entità:
 **RF-DB-03 — Tipi di Dati**
 
 Il database deve memorizzare:
-- **Rumore (dB):** Livello sonoro per rilevare anomalie, predatori, sciami
 - **Peso (kg):** Indicatore di produzione miele e salute colonia
 - **Temperatura (°C):** Monitoraggio termoregolazione (nido ~35°C)
 - **Umidità (%):** Cruciale per maturazione miele (< 65% RH)
+
+Sviluppi futuri:
+- **Rumore (dB):** Livello sonoro per rilevare anomalie, predatori, sciami
 - **Livello acqua (%):** Disponibilità idrica per termoregolazione
 
 **RF-DB-04 — Filtri e Statistiche**
