@@ -3,18 +3,31 @@
 // ============================================================================
 
 #include <WiFi.h>
+#include <WiFiMulti.h>  // MODIFICATO: Usa WiFiMulti per gestione automatica
+#include <esp_task_wdt.h>
 #include "SensorValidation.h"
 
 // ============================================================================
-// CONFIGURAZIONE DEVICE (da personalizzare per ogni arnia)
+// CONFIGURAZIONE WI-FI MULTIPLI (da personalizzare per ogni arnia)
 // ============================================================================
-const char* WIFI_SSID = "ARNIA_WIFI";
-const char* WIFI_PASSWORD = "password123";
+// MODIFICATO: Configurazione reti multiple
+const char* WIFI_NETWORKS[][2] = {
+  {"Gruppo4Network", "Networks"},           // Rete principale
+  {"WIFI_LABORATORIO", "password_lab"},     // Rete laboratorio
+  {"WIFI_SCUOLA", "password_scuola"}        // Rete scuola (backup)
+};
+const int NUM_NETWORKS = 3;
 
 // Configurazione server REST
 const char* REST_URL = "https://apicoltura-xxxx.restdb.io/rest";
 const char* REST_KEY = "your-api-key-here";
 const int REST_TIMEOUT = 10000;
+
+// Configurazione watchdog
+#define WDT_TIMEOUT 30  // secondi
+
+// MODIFICATO: WiFiMulti invece di gestione manuale
+WiFiMulti wifiMulti;
 
 // ============================================================================
 // VARIABILI DEVICE
@@ -74,6 +87,7 @@ unsigned long ultimoCheck_ds18b20 = 0;
 unsigned long ultimoCheck_sht21_humidity = 0;
 unsigned long ultimoCheck_sht21_temperature = 0;
 unsigned long ultimoCheck_hx711 = 0;
+unsigned long ultimoCheckWiFi = 0;  // AGGIUNTO: per controllo WiFi periodico
 
 // ============================================================================
 // STATO SISTEMA
@@ -82,7 +96,71 @@ bool wifiConnesso = false;
 bool configCaricata = false;
 
 // ============================================================================
-// GESTIONE WI-FI (specifica del device)
+// GESTIONE RISULTATI VALIDAZIONE
+// ============================================================================
+void gestisciRisultatoValidazione(RisultatoValidazione risultato) {
+  if (risultato.valido) {
+    Serial.println("  ✓ Lettura valida");
+    
+    // Gestione alert
+    if (risultato.codiceErrore == ALERT_THRESHOLD_HIGH) {
+      Serial.println("  ⚠ ALERT: Valore sopra soglia massima");
+    } else if (risultato.codiceErrore == ALERT_THRESHOLD_LOW) {
+      Serial.println("  ⚠ ALERT: Valore sotto soglia minima");
+    }
+  } else {
+    Serial.print("  ✗ Lettura NON valida - Codice errore: ");
+    Serial.println(risultato.codiceErrore);
+    
+    // Decodifica errore
+    switch(risultato.codiceErrore) {
+      case ERROR_SENSOR_NOT_FOUND:
+        Serial.println("    Sensore non trovato");
+        break;
+      case ERROR_READ_FAILED:
+        Serial.println("    Lettura fallita");
+        break;
+      case ERROR_OUT_OF_RANGE:
+        Serial.println("    Valore fuori range");
+        break;
+      case ERROR_SPIKE_DETECTED:
+        Serial.println("    Spike rilevato");
+        break;
+      default:
+        Serial.println("    Errore sconosciuto");
+    }
+  }
+}
+
+// ============================================================================
+// GESTIONE OVERFLOW MILLIS
+// ============================================================================
+bool intervalloTrascorso(unsigned long &ultimoCheck, unsigned long intervallo) {
+  unsigned long adesso = millis();
+  
+  // Gestisce correttamente l'overflow di millis()
+  if ((adesso - ultimoCheck) >= intervallo) {
+    ultimoCheck = adesso;
+    return true;
+  }
+  return false;
+}
+
+// ============================================================================
+// OTTIENI TIMESTAMP UNIX (richiede NTP)
+// ============================================================================
+unsigned long getUnixTimestamp() {
+  // Se hai configurato NTP, usa time(nullptr)
+  // Altrimenti usa millis/1000 come fallback
+  time_t now = time(nullptr);
+  if (now < 1000000000) {  // Timestamp non valido
+    return millis() / 1000;  // Fallback
+  }
+  return (unsigned long)now;
+}
+
+// ============================================================================
+// MODIFICATO: GESTIONE WI-FI CON WiFiMulti
 // ============================================================================
 void initWiFi() {
   // Ottieni MAC address
@@ -95,30 +173,34 @@ void initWiFi() {
   Serial.println(deviceMacAddress);
 
   WiFi.mode(WIFI_STA);
+  
+  // MODIFICATO: Aggiungi tutte le reti configurate
+  Serial.println("\n  Reti Wi-Fi configurate:");
+  for (int i = 0; i < NUM_NETWORKS; i++) {
+    wifiMulti.addAP("Gruppo4Network", "Networks");
+    Serial.print("    - ");
+    Serial.println(WIFI_NETWORKS[i][0]);
+  }
+  Serial.println();
 }
 
 bool connectWiFi() {
-  if (WiFi.status() == WL_CONNECTED) {
-    wifiConnesso = true;
-    return true;
-  }
-
-  Serial.print("  Connessione a ");
-  Serial.print(WIFI_SSID);
-  Serial.print("...");
-
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-
-  int tentativi = 0;
-  while (WiFi.status() != WL_CONNECTED && tentativi < 20) {
+  Serial.println("  Connessione alla rete migliore disponibile...");
+  
+  // MODIFICATO: WiFiMulti gestisce automaticamente la connessione
+  uint8_t tentativi = 0;
+  while (wifiMulti.run() != WL_CONNECTED && tentativi < 20) {
     delay(500);
     Serial.print(".");
     tentativi++;
+    esp_task_wdt_reset();  // Reset watchdog durante connessione
   }
-
+  
   if (WiFi.status() == WL_CONNECTED) {
     wifiConnesso = true;
     Serial.println(" OK");
+    Serial.print("    Connesso a: ");
+    Serial.println(WiFi.SSID());
     Serial.print("    IP: ");
     Serial.println(WiFi.localIP());
     Serial.print("    RSSI: ");
@@ -128,6 +210,7 @@ bool connectWiFi() {
   } else {
     wifiConnesso = false;
     Serial.println(" FALLITO");
+    Serial.println("    Nessuna rete disponibile");
     return false;
   }
 }
@@ -135,6 +218,32 @@ bool connectWiFi() {
 bool isWiFiConnected() {
   wifiConnesso = (WiFi.status() == WL_CONNECTED);
   return wifiConnesso;
+}
+
+// MODIFICATO: Riconnessione automatica con WiFiMulti
+void checkWiFiConnection() {
+  // Controlla ogni 10 secondi
+  if (intervalloTrascorso(ultimoCheckWiFi, 10000)) {
+    
+    if (wifiMulti.run() != WL_CONNECTED) {
+      Serial.println("\n! WiFi disconnesso, riconnessione automatica...");
+      wifiConnesso = false;
+    } else {
+      // Connesso - aggiorna stato
+      if (!wifiConnesso) {
+        // Appena riconnesso
+        Serial.println("\n✓ WiFi riconnesso!");
+        Serial.print("  Connesso a: ");
+        Serial.println(WiFi.SSID());
+        Serial.print("  IP: ");
+        Serial.println(WiFi.localIP());
+        Serial.print("  RSSI: ");
+        Serial.print(WiFi.RSSI());
+        Serial.println(" dBm\n");
+      }
+      wifiConnesso = true;
+    }
+  }
 }
 
 // ============================================================================
@@ -177,7 +286,7 @@ void inviaDatoSensore(const char* tipoSensore, const char* idSensore,
 
   if (!isWiFiConnected()) {
     Serial.println("  ! Wi-Fi non connesso, dato non inviato");
-    // TODO: Salvare in buffer locale
+    // TODO: Salvare in buffer locale (SPIFFS/LittleFS)
     return;
   }
 
@@ -193,6 +302,9 @@ void inviaDatoSensore(const char* tipoSensore, const char* idSensore,
     alertTipo = "LOW";
   }
 
+  // Usa timestamp Unix invece di millis()
+  unsigned long timestamp = getUnixTimestamp();
+
   // Salva sul server
   bool salvato = save_value(
     deviceMacAddress,
@@ -200,7 +312,7 @@ void inviaDatoSensore(const char* tipoSensore, const char* idSensore,
     idSensore,
     risultato->valorePulito,
     unita,
-    millis(),
+    timestamp,
     risultato->codiceErrore,
     alert,
     alertTipo
@@ -208,7 +320,7 @@ void inviaDatoSensore(const char* tipoSensore, const char* idSensore,
 
   if (!salvato) {
     Serial.println("  ! Errore salvataggio dato");
-    // TODO: Salvare in buffer locale
+    // TODO: Salvare in buffer locale (SPIFFS/LittleFS)
   }
 }
 
@@ -222,11 +334,17 @@ void setup() {
   Serial.println("\n");
   Serial.println("========================================");
   Serial.println("  SISTEMA MONITORAGGIO ARNIA - PCTO");
-  Serial.println("  Main Controller v2.2");
+  Serial.println("  Main Controller v2.4");  // MODIFICATO: nuova versione
   Serial.println("========================================");
   Serial.println();
 
-  // FASE 1: Inizializzazione Wi-Fi (gestione locale)
+  // Inizializza watchdog
+  Serial.println("Inizializzazione Watchdog Timer...");
+  esp_task_wdt_init(WDT_TIMEOUT, true);
+  esp_task_wdt_add(NULL);
+  Serial.println("  + Watchdog attivo\n");
+
+  // FASE 1: Inizializzazione Wi-Fi con WiFiMulti
   Serial.println("FASE 1: INIZIALIZZAZIONE WI-FI\n");
   initWiFi();
 
@@ -239,9 +357,11 @@ void setup() {
   // FASE 2: Inizializzazione Data Manager (server REST)
   Serial.println("FASE 2: INIZIALIZZAZIONE DATA MANAGER\n");
   ServerConfig serverConfig;
-  strncpy(serverConfig.baseUrl, REST_URL, sizeof(serverConfig.baseUrl) - 1);
-  strncpy(serverConfig.apiKey, REST_KEY, sizeof(serverConfig.apiKey) - 1);
+  
+  snprintf(serverConfig.baseUrl, sizeof(serverConfig.baseUrl), "%s", REST_URL);
+  snprintf(serverConfig.apiKey, sizeof(serverConfig.apiKey), "%s", REST_KEY);
   serverConfig.timeout = REST_TIMEOUT;
+  
   init_data_manager(&serverConfig);
 
   // FASE 3: Inizializzazione hardware sensori
@@ -272,15 +392,16 @@ void setup() {
 // LOOP PRINCIPALE
 // ============================================================================
 void loop() {
-  unsigned long tempoAttuale = millis();
+  // Reset watchdog
+  esp_task_wdt_reset();
+  
+  // MODIFICATO: Controllo WiFi automatico con WiFiMulti
+  checkWiFiConnection();
 
   // ──────────────────────────────────────
   // DS18B20 - TEMPERATURA INTERNA
   // ──────────────────────────────────────
-  if (is_abilitato_ds18b20() &&
-      (tempoAttuale - ultimoCheck_ds18b20 >= get_intervallo_ds18b20())) {
-    ultimoCheck_ds18b20 = tempoAttuale;
-
+  if (is_abilitato_ds18b20() && intervalloTrascorso(ultimoCheck_ds18b20, get_intervallo_ds18b20())) {
     Serial.println("\n[DS18B20] LETTURA TEMPERATURA INTERNA");
     RisultatoValidazione risultato = read_temperature_ds18b20();
     gestisciRisultatoValidazione(risultato);
@@ -295,10 +416,7 @@ void loop() {
   // ──────────────────────────────────────
   // SHT21 - UMIDITA
   // ──────────────────────────────────────
-  if (is_abilitato_humidity_sht21() &&
-      (tempoAttuale - ultimoCheck_sht21_humidity >= get_intervallo_humidity_sht21())) {
-    ultimoCheck_sht21_humidity = tempoAttuale;
-
+  if (is_abilitato_humidity_sht21() && intervalloTrascorso(ultimoCheck_sht21_humidity, get_intervallo_humidity_sht21())) {
     Serial.println("\n[SHT21] LETTURA UMIDITA");
     RisultatoValidazione risultato = read_humidity_sht21();
     gestisciRisultatoValidazione(risultato);
@@ -313,10 +431,7 @@ void loop() {
   // ──────────────────────────────────────
   // SHT21 - TEMPERATURA AMBIENTE
   // ──────────────────────────────────────
-  if (is_abilitato_temperature_sht21() &&
-      (tempoAttuale - ultimoCheck_sht21_temperature >= get_intervallo_temperature_sht21())) {
-    ultimoCheck_sht21_temperature = tempoAttuale;
-
+  if (is_abilitato_temperature_sht21() && intervalloTrascorso(ultimoCheck_sht21_temperature, get_intervallo_temperature_sht21())) {
     Serial.println("\n[SHT21] LETTURA TEMPERATURA AMBIENTE");
     RisultatoValidazione risultato = read_temperature_sht21();
     gestisciRisultatoValidazione(risultato);
@@ -331,10 +446,7 @@ void loop() {
   // ──────────────────────────────────────
   // HX711 - PESO
   // ──────────────────────────────────────
-  if (is_abilitato_hx711() &&
-      (tempoAttuale - ultimoCheck_hx711 >= get_intervallo_hx711())) {
-    ultimoCheck_hx711 = tempoAttuale;
-
+  if (is_abilitato_hx711() && intervalloTrascorso(ultimoCheck_hx711, get_intervallo_hx711())) {
     Serial.println("\n[HX711] LETTURA PESO");
     RisultatoValidazione risultato = read_weight_hx711();
     gestisciRisultatoValidazione(risultato);
@@ -359,6 +471,7 @@ void stampaStatistiche() {
   Serial.print("Free RAM: "); Serial.println(ESP.getFreeHeap());
   Serial.print("Wi-Fi: "); Serial.println(isWiFiConnected() ? "Connesso" : "Disconnesso");
   if (isWiFiConnected()) {
+    Serial.print("SSID: "); Serial.println(WiFi.SSID());
     Serial.print("RSSI: "); Serial.print(WiFi.RSSI()); Serial.println(" dBm");
   }
   Serial.println();
