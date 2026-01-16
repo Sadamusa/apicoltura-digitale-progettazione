@@ -68,7 +68,7 @@ Il monitoraggio del peso avviene tramite una cella di carico montata a "sandwich
 
 ### 3. Gestione GPIO Critici
 * **GPIO 2:** Collegato al LED interno, influisce sul boot mode. Assicurarsi che l'HX711 non forzi questo pin a livello basso durante l'avvio.
-* **GPIO 12:** Durante il boot, questo pin non deve essere "High" (alto).
+* **GPIO 12:** Durante il boot, questo pin non deve essere "High".
 
 ---
 
