@@ -18,3 +18,8 @@ Funzionigramma Applicazione Apiario
 -   F3.1-Sezione Sensori: Mostra i dati dei sensori in tempo reale, aggiornati automaticamente dal sistema, il database carica le informazioni nelle label di questa sezione.
 -   F3.2-Sezione Notifiche: Area dedicata alle notifiche e agli avvisi, con popup di allerta relativi allo stato dei sensori e agli eventi critici dell’arnia.
 -   F3.3- Grafico filtrato: Possibilità di filtrare i dati nel grafico, peso, temperaura ,umidità, errori.
+
+-   Dashboard sezione taratura:
+-   F4.0- Bottone Salva sensore Umidità.
+-   F4.1- Bottone Salva sensore Tempertura.
+-   F4.2 - Bottone Salva sensore Peso.
