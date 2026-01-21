@@ -1,44 +1,49 @@
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
+import { useState } from 'react';
+import sfondoLogin from './assets/Sfondo_login.png';
 
 function App() {
+  const [apiKey, setApiKey] = useState('');
+
+  const handleLogin = () => {
+    console.log('Login clicked');
+  };
+
   return (
-    <div className="mx-auto max-w-7xl p-8 text-center">
-      <div className="flex justify-center">
-        <a
-          href="https://vite.dev"
-          target="_blank"
-          className="p-6 transition hover:drop-shadow-[0_0_2em_#646cffaa]"
+    <div 
+      className="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: `url(${sfondoLogin})` }}
+    >
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 w-full max-w-sm">
+        <h1 className="text-3xl font-bold text-gray-800 text-center mb-6">
+          Login
+        </h1>
+
+        <div className="mb-4">
+          <div className="flex items-center bg-gray-100 rounded-lg px-4 py-3">
+            <svg 
+              className="w-6 h-6 text-amber-600 mr-3" 
+              fill="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path d="M21 10.5h-2.5l1.25-2.17a. 5.5 0 0 0-.43-.75h-2.5l1.25-2.16a.5.5 0 0 0-. 43-.75H12.5a.5.5 0 0 0-.43.25L10.5 8H8l1.25-2.17a.5.5 0 0 0-.43-. 75H5.5a. 5.5 0 0 0-.43.25L3.5 8H1a.5.5 0 0 0-.43.75L2.07 11.57 13.25a.5.5 0 0 0 . 43.75H3.5l-1.25 2.17a.5.5 0 0 0 .43.75H6.5l-1.25 2.16a. 5.5 0 0 0 .43.75h4.14a.5.5 0 0 0 .43-.25L12 17h2.5l-1.25 2.17a. 5.5 0 0 0 .43.75h3.32a.5.5 0 0 0 .43-.25l1.57-2.67h3a.5.5 0 0 0 .43-.75L20.93 14l1.5-2.25a.5.5 0 0 0-.43-.75z"/>
+            </svg>
+            <input
+              type="text"
+              value={apiKey}
+              onChange={(e) => setApiKey(e. target.value)}
+              placeholder="ApiKey"
+              className="flex-1 bg-transparent outline-none text-gray-700 placeholder-gray-500"
+            />
+          </div>
+        </div>
+
+        <button
+          onClick={handleLogin}
+          className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
         >
-          <img src={viteLogo} alt="Vite logo" className="h-24" />
-        </a>
-
-        <a
-          href="https://react.dev"
-          target="_blank"
-          className="p-6 animate-spin-slow transition hover:drop-shadow-[0_0_2em_#61dafbaa]"
-        >
-          <img src={reactLogo} alt="React logo" className="h-24" />
-        </a>
-      </div>
-
-      <h1 className="my-6 text-4xl font-bold">Vite + React</h1>
-
-      <div className="p-8">
-        <button className="rounded-lg border border-gray-300 px-4 py-2 font-medium transition hover:border-indigo-500 hover:text-indigo-500">
-          Ready to go 🚀
+          Login
         </button>
-
-        <p className="mt-4 text-sm">
-          Edit{" "}
-          <code className="rounded bg-gray-100 px-1 py-0.5">src/App.jsx</code>{" "}
-          and save to test HMR
-        </p>
       </div>
-
-      <p className="text-gray-400">
-        Click on the Vite and React logos to learn more
-      </p>
     </div>
   );
 }
