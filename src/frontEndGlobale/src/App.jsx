@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/card"
 import { useState } from "react"
 import MenuLogin from "./components/pagine/MenuLogin"
-import SidebarApiario from "./components/pagine/SidebarApiario"
+import DashboardApiario from "./components/pagine/DashboardApiario"
 import ConfiguraApiario from "./components/pagine/ConfiguraApiario"
 import TaraturaApiario from "./components/pagine/TaraturaApiario"
 
@@ -75,7 +75,7 @@ function App() {
         <MenuLogin onLoginSuccess={() => setCurrentPage('Sidebar')} />
       )}
       {currentPage === 'Sidebar' && (
-        <SidebarApiario 
+        <DashboardApiario 
           apiaries={apiaries}
           selectedId={selectedId}
           setSelectedId={setSelectedId}
