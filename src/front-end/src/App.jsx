@@ -6,156 +6,180 @@ function App() {
   const [weight, setWeight] = useState({ min: '', max: '' });
 
   const handleSave = (type) => {
-    console.log(`Salvando ${type}:`, 
-      type === 'humidity' ? humidity : 
-      type === 'temperature' ? temperature : weight
+    console.log(`Salvando ${type}:`,
+      type === 'humidity' ? humidity :
+        type === 'temperature' ? temperature : weight
     );
     alert(`Dati ${type} salvati!`);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 p-8">
-      <div className="mx-auto max-w-4xl">
-        <h1 className="mb-12 text-4xl font-bold text-gray-800">
-          Taratura <span className="text-orange-600">Arnia 3</span>
-        </h1>
+    <div
+      className="flex min-h-screen items-center justify-center p-8"
+      style={{
+        backgroundImage: "url('/src/assets/SfondoTaratura.png')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+      }}
+    >
+      <div className="w-full max-w-4xl">
+        <div className="rounded-3xl bg-white/70 p-8 shadow-xl backdrop-blur-md">
+          <h1 className="mb-12 flex items-baseline gap-2 font-bold text-black-800">
+            <button
+              //onClick={() => handleSave('humidity')}
+              className="bg-transparent border-0 p-0 cursor-pointer hover:opacity-80 transition">
+              <img
+                src="src/assets/FrecciaIndietro.svg"
+                alt="FrecciaIndietro"
+                className="h-8 w-8"
+              />
+            </button>
+            <span className="text-5xl">Taratura</span>
+            <span className="text-2xl">Arnia 3</span>
+          </h1>
 
-        <div className="grid gap-8 md:grid-cols-3">
-          {/* Umidità */}
-          <div className="rounded-3xl bg-white p-6 shadow-lg">
-            <div className="mb-6 flex justify-center">
-              <div className="rounded-full bg-blue-50 p-6">
-                <svg className="h-12 w-12 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
-                </svg>
-              </div>
-            </div>
-
+          <div className="grid gap-8 md:grid-cols-3">
+            {/* Umidità */}
             <div className="space-y-4">
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-600">
-                  Minimo
-                </label>
-                <input
-                  type="number"
-                  value={humidity.min}
-                  onChange={(e) => setHumidity({ ...humidity, min: e.target.value })}
-                  className="w-full rounded-lg border-0 bg-amber-100 px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  placeholder="0"
-                />
+              <div className="mb-6 flex justify-center">
+                <div className="rounded-full bg-blue-50 p-6">
+                  <img
+                    src="/src/assets/icona_goccia.svg"
+                    alt="Umidità"
+                    className="h-22 w-22"
+                  />
+                </div>
               </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-600">
+                    Minimo
+                  </label>
+                  <input
+                    type="number"
+                    value={humidity.min}
+                    onChange={(e) => setHumidity({ ...humidity, min: e.target.value })}
+                    className="w-full rounded-lg border-0 bg-amber-100 px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    placeholder="0"
+                  />
+                </div>
 
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-600">
-                  Massimo
-                </label>
-                <input
-                  type="number"
-                  value={humidity.max}
-                  onChange={(e) => setHumidity({ ...humidity, max: e.target.value })}
-                  className="w-full rounded-lg border-0 bg-amber-100 px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  placeholder="100"
-                />
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-600">
+                    Massimo
+                  </label>
+                  <input
+                    type="number"
+                    value={humidity.max}
+                    onChange={(e) => setHumidity({ ...humidity, max: e.target.value })}
+                    className="w-full rounded-lg border-0 bg-amber-100 px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    placeholder="100"
+                  />
+                </div>
+
+                <button
+                  onClick={() => handleSave('humidity')}
+                  className="w-full rounded-lg bg-orange-500 py-3 font-semibold text-black transition hover:bg-orange-600"
+                >
+                  Salva
+                </button>
               </div>
-
-              <button
-                onClick={() => handleSave('humidity')}
-                className="w-full rounded-lg bg-orange-500 py-3 font-semibold text-white transition hover:bg-orange-600"
-              >
-                Salva
-              </button>
             </div>
-          </div>
 
-          {/* Temperatura */}
-          <div className="rounded-3xl bg-white p-6 shadow-lg">
-            <div className="mb-6 flex justify-center">
-              <div className="rounded-full bg-red-50 p-6">
-                <svg className="h-12 w-12 text-red-500" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M15 13V5a3 3 0 1 0-6 0v8a5 5 0 1 0 6 0zm-3-10a1 1 0 0 1 1 1v8.17a3 3 0 1 1-2 0V4a1 1 0 0 1 1-1z"/>
-                </svg>
-              </div>
-            </div>
-
+            {/* Temperatura */}
             <div className="space-y-4">
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-600">
-                  Minimo
-                </label>
-                <input
-                  type="number"
-                  value={temperature.min}
-                  onChange={(e) => setTemperature({ ...temperature, min: e.target.value })}
-                  className="w-full rounded-lg border-0 bg-amber-100 px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-400"
-                  placeholder="0"
-                />
+              <div className="mb-6 flex justify-center">
+                <div className="rounded-full bg-red-50 p-6">
+                  <img
+                    src="/src/assets/icona_termometro.svg"
+                    alt="Temperatura"
+                    className="h-22 w-22"
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-600">
-                  Massimo
-                </label>
-                <input
-                  type="number"
-                  value={temperature.max}
-                  onChange={(e) => setTemperature({ ...temperature, max: e.target.value })}
-                  className="w-full rounded-lg border-0 bg-amber-100 px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-400"
-                  placeholder="50"
-                />
-              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-600">
+                    Minimo
+                  </label>
+                  <input
+                    type="number"
+                    value={temperature.min}
+                    onChange={(e) => setTemperature({ ...temperature, min: e.target.value })}
+                    className="w-full rounded-lg border-0 bg-amber-100 px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-400"
+                    placeholder="0"
+                  />
+                </div>
 
-              <button
-                onClick={() => handleSave('temperature')}
-                className="w-full rounded-lg bg-orange-500 py-3 font-semibold text-white transition hover:bg-orange-600"
-              >
-                Salva
-              </button>
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-600">
+                    Massimo
+                  </label>
+                  <input
+                    type="number"
+                    value={temperature.max}
+                    onChange={(e) => setTemperature({ ...temperature, max: e.target.value })}
+                    className="w-full rounded-lg border-0 bg-amber-100 px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-400"
+                    placeholder="50"
+                  />
+                </div>
+
+                <button
+                  onClick={() => handleSave('temperature')}
+                  className="w-full rounded-lg bg-orange-500 py-3 font-semibold text-black transition hover:bg-orange-600"
+                >
+                  Salva
+                </button>
+              </div>
             </div>
-          </div>
 
-          {/* Peso */}
-          <div className="rounded-3xl bg-white p-6 shadow-lg">
-            <div className="mb-6 flex justify-center">
-              <div className="rounded-full bg-gray-100 p-6">
-                <svg className="h-12 w-12 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-                </svg>
-              </div>
-            </div>
-
+            {/* Peso */}
             <div className="space-y-4">
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-600">
-                  Minimo
-                </label>
-                <input
-                  type="number"
-                  value={weight.min}
-                  onChange={(e) => setWeight({ ...weight, min: e.target.value })}
-                  className="w-full rounded-lg border-0 bg-amber-100 px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                  placeholder="0"
-                />
+              <div className="mb-6 flex justify-center">
+                <div className="rounded-full bg-gray-100 p-6">
+                  <img
+                    src="/src/assets/icona_peso.svg"
+                    alt="Peso"
+                    className="h-22 w-22"
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-600">
-                  Massimo
-                </label>
-                <input
-                  type="number"
-                  value={weight.max}
-                  onChange={(e) => setWeight({ ...weight, max: e.target.value })}
-                  className="w-full rounded-lg border-0 bg-amber-100 px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                  placeholder="100"
-                />
-              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-600">
+                    Minimo
+                  </label>
+                  <input
+                    type="number"
+                    value={weight.min}
+                    onChange={(e) => setWeight({ ...weight, min: e.target.value })}
+                    className="w-full rounded-lg border-0 bg-amber-100 px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                    placeholder="0"
+                  />
+                </div>
 
-              <button
-                onClick={() => handleSave('weight')}
-                className="w-full rounded-lg bg-orange-500 py-3 font-semibold text-white transition hover:bg-orange-600"
-              >
-                Salva
-              </button>
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-600">
+                    Massimo
+                  </label>
+                  <input
+                    type="number"
+                    value={weight.max}
+                    onChange={(e) => setWeight({ ...weight, max: e.target.value })}
+                    className="w-full rounded-lg border-0 bg-amber-100 px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                    placeholder="100"
+                  />
+                </div>
+
+                <button
+                  onClick={() => handleSave('weight')}
+                  className="w-full rounded-lg bg-orange-500 py-3 font-semibold text-black transition hover:bg-orange-600"
+                >
+                  Salva
+                </button>
+              </div>
             </div>
           </div>
         </div>
