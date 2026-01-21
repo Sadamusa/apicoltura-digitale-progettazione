@@ -15,7 +15,7 @@ function App() {
       className="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat"
       style={{ backgroundImage: `url(${sfondoLogin})` }}
     >
-      <div className="bg-white/30 backdrop-blur-sm rounded-2xl shadow-lg p-8 w-full max-w-sm">
+      <div className="bg-white/45 backdrop-blur-sm rounded-2xl shadow-lg p-8 w-full max-w-sm">
         <h1 className="text-4xl font-bold text-gray-800 text-center mb-8">
           Login
         </h1>
