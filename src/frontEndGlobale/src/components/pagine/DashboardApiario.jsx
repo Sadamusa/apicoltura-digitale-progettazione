@@ -1,36 +1,134 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardFooter, CardTitle } from "@/components/ui/card";
 
-// Import asset - paths corretti
+//Import asset
 import icona_menu from "../../assets/icona_menu.svg";
 import icona_impostazioni from "../../assets/icona_impostazioni.svg";
-import icona_moveitem from "../../assets/move_item.svg";
+import icona_moveitem from "../../assets/FrecciaIndietro.svg";
 import icona_alveare from "../../assets/icona_alveare.svg";
 import icona_goccia from "../../assets/icona_goccia.svg";
 import icona_termometro from "../../assets/icona_termometro.svg";
 import icona_peso from "../../assets/icona_peso.svg";
 
-// Componente SVG temporaneo per l'icona avviso
 function IconaAvviso({ className = "w-8 h-8" }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-      <path fillRule="evenodd" d="M9. 401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-. 29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-. 75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clipRule="evenodd" />
+      <path fillRule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clipRule="evenodd" />
     </svg>
   );
 }
 
-function DashboardApiario({ apiaries, selectedId, setSelectedId, onAdd, onNavigateToTaratura, onLogout }) {
+function DashboardApiario({ selectedId, setSelectedId, onNavigateToTaratura, onLogout }) {
   const [menuOpen, setMenuOpen] = useState(true);
   const [showUmidita, setShowUmidita] = useState(true);
   const [showPeso, setShowPeso] = useState(true);
   const [showTemperatura, setShowTemperatura] = useState(true);
   const [timeRange, setTimeRange] = useState("1mese");
+  const [apiaries, setApiaries] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // CONFIGURAZIONE API
+  const API_URL = 'https://databasesagomato2316-f801.restdb.io/rest';
+  const API_KEY = '6971f2593731f762e33fd827';
 
   // Soglie
   const sogliaTemperaturaMax = 25;
   const sogliaPesoMin = 47;
+
+  // Carica le arnie all'avvio
+  useEffect(() => {
+    console.log('=== DashboardApiario montato ===');
+    loadApiaries();
+  }, []);
+
+  const loadApiaries = async () => {
+    try {
+      setLoading(true);
+      console.log('🔄 [Dashboard] Inizio caricamento arnie...');
+      
+      // NOTA: Ho corretto l'URL in base a quello che sembra funzionare nel tuo altro file
+      const url = `${API_URL}/arnie`; 
+
+      const headers = {
+        'Content-Type': 'application/json',
+        'x-apikey': API_KEY,
+        'cache-control': 'no-cache'
+      };
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: headers
+      });
+
+      if (!response.ok) {
+        throw new Error(`Errore HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (!Array.isArray(data)) {
+        throw new Error('Formato dati non valido');
+      }
+
+      // Trasforma i dati dal formato DB
+      const transformedData = data.map((arnia, index) => {
+        return {
+          id: arnia.arn_id || arnia._id,
+          name: `Arnia ${arnia.arn_id || index + 1}`,
+          arn_id: arnia.arn_id,
+          arn_api_id: arnia.arn_api_id,
+          arn_piena: arnia.arn_piena,
+          arn_MacAddress: arnia.arn_MacAddress,
+          arn_dataInst: arnia.arn_dataInst,
+          _id: arnia._id,
+          notifiche: 0 
+        };
+      });
+
+      console.log('✅ [Dashboard] Dati trasformati:', transformedData);
+      setApiaries(transformedData);
+
+      // Seleziona la prima arnia se nessuna è selezionata
+      if (transformedData.length > 0 && !selectedId) {
+        console.log('🎯 [Dashboard] Selezione automatica:', transformedData[0].id);
+        setSelectedId(transformedData[0].id);
+      }
+
+    } catch (error) {
+      console.error('❌ [Dashboard] Errore:', error);
+      alert(`Errore nel caricamento: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // =========================================================
+  // ✅ FIX: FUNZIONE DI NAVIGAZIONE SICURA
+  // =========================================================
+  const handleSettingsClick = () => {
+    console.log("🛠️ Click su Impostazioni. ID Selezionato:", selectedId);
+    console.log("📋 Lista Arnie disponibili:", apiaries);
+
+    if (!selectedId) {
+      alert("Nessuna arnia selezionata. Per favore seleziona un'arnia dalla lista.");
+      return;
+    }
+
+    // Cerca l'arnia convertendo entrambi gli ID in stringa per sicurezza
+    const arniaSelezionata = apiaries.find(a => String(a.id) === String(selectedId));
+    
+    if (arniaSelezionata) {
+      console.log("🚀 Navigazione verso taratura con oggetto:", arniaSelezionata);
+      // Passa l'oggetto COMPLETO alla funzione del genitore (App.js)
+      onNavigateToTaratura(arniaSelezionata); 
+    } else {
+      console.error("❌ ERRORE CRITICO: ID selezionato non trovato nella lista apiaries.");
+      alert("Errore: Impossibile trovare i dati dell'arnia selezionata.");
+    }
+  };
+  // =========================================================
 
   return (
     <div 
@@ -38,35 +136,33 @@ function DashboardApiario({ apiaries, selectedId, setSelectedId, onAdd, onNaviga
       style={{
         backgroundImage: "url('src/assets/Sfondo_configurazione.png')",
         backgroundSize: 'cover',
-        backgroundPosition:  'center'
+        backgroundPosition: 'center'
       }}
     >
       {/* SIDEBAR DESKTOP */}
       <div className="hidden md:flex w-80 p-4">
-        {menuOpen ?  (
+        {menuOpen ? (
           <Card className="w-full rounded-3xl bg-white/90 shadow-lg backdrop-blur-md overflow-hidden">
             <CardHeader className="space-y-4 p-8">
-              {/* Barra icone */}
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                  {/* Bottone menu */}
                   <button
                     onClick={() => setMenuOpen(false)}
-                    className="p-2 rounded-full hover: bg-gray-200 transition"
+                    className="p-2 rounded-full hover:bg-gray-200 transition"
                   >
                     <img src={icona_menu} alt="Menu" className="w-7 h-7" />
                   </button>
 
-                  {/* Bottone impostazione */}
+                  {/* ✅ TASTO IMPOSTAZIONI DESKTOP AGGIORNATO */}
                   <button 
-                    onClick={onNavigateToTaratura}
+                    onClick={handleSettingsClick} 
                     className="p-2 rounded-full hover:bg-gray-200 transition"
+                    title="Taratura Sensori"
                   >
                     <img src={icona_impostazioni} alt="Impostazioni" className="w-7 h-7" />
                   </button>
                 </div>
 
-                {/* Bottone Logout */}
                 <button 
                   onClick={onLogout}
                   className="p-2 rounded-full hover:bg-gray-200 transition"
@@ -81,42 +177,55 @@ function DashboardApiario({ apiaries, selectedId, setSelectedId, onAdd, onNaviga
             </CardHeader>
 
             <CardContent className="p-8 pt-0">
-              {/* Lista apiari */}
-              <div className="flex flex-col gap-4">
-                {apiaries.length === 0 ? (
-                  <div className="text-sm text-gray-500">Nessuna arnia.  Premi "Aggiungi" per crearne una.</div>
-                ) : (
-                  apiaries. map((a) => {
-                    const isSelected = a.id === selectedId;
-                    return (
-                      <button
-                        key={a.id}
-                        onClick={() => setSelectedId(a.id)}
-                        className={`w-full rounded-xl flex items-center gap-4 px-5 py-4 transition font-bold text-lg text-left relative
-                          ${isSelected ? "bg-orange-500 text-white" : "bg-amber-200 text-black hover:bg-amber-300"}`}
-                      >
-                        <img src={icona_alveare} alt="Arnia" className="w-7 h-7" />
-                        <span>{a.name}</span>
-                        {a.notifiche && (
-                          <span className="absolute right-4 top-3 bg-red-500 text-white text-sm w-6 h-6 rounded-full flex items-center justify-center font-bold">
-                            {a.notifiche}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })
-                )}
-              </div>
+              {loading && (
+                <div className="text-center text-gray-600 py-4">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-2"></div>
+                  Caricamento... 
+                </div>
+              )}
+
+              {!loading && (
+                <div className="flex flex-col gap-4">
+                  {apiaries.length === 0 ? (
+                    <div className="text-sm text-gray-500 text-center py-4">
+                      <p className="mb-2">Nessuna arnia trovata.</p>
+                    </div>
+                  ) : (
+                    apiaries.map((a) => {
+                      const isSelected = a.id === selectedId;
+                      return (
+                        <button
+                          key={a.id}
+                          onClick={() => {
+                            console.log('🎯 Selezione arnia:', a.id);
+                            setSelectedId(a.id);
+                          }}
+                          className={`w-full rounded-xl flex items-center gap-4 px-5 py-4 transition font-bold text-lg text-left relative
+                            ${isSelected ? "bg-orange-500 text-white" : "bg-amber-200 text-black hover:bg-amber-300"}`}
+                        >
+                          <img src={icona_alveare} alt="Arnia" className="w-7 h-7" />
+                          <span>{a.name}</span>
+                          {a.notifiche > 0 && (
+                            <span className="absolute right-4 top-3 bg-red-500 text-white text-sm w-6 h-6 rounded-full flex items-center justify-center font-bold">
+                              {a.notifiche}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              )}
             </CardContent>
 
             <CardFooter className="p-8 pt-0">
-              {/* Bottone Aggiungi */}
               <Button
-                onClick={onAdd}
-                className="w-full bg-amber-200 text-black font-bold text-lg px-5 py-4 hover:bg-amber-300 rounded-xl flex items-center gap-3 justify-center"
+                onClick={loadApiaries}
+                disabled={loading}
+                className="w-full bg-amber-200 text-black font-bold text-lg px-5 py-4 hover:bg-amber-300 rounded-xl flex items-center gap-3 justify-center disabled:opacity-50"
               >
-                <span className="text-xl">＋</span>
-                <span>Aggiungi</span>
+                <span className="text-xl">↻</span>
+                <span>{loading ? 'Caricamento...' : 'Aggiorna'}</span>
               </Button>
             </CardFooter>
           </Card>
@@ -134,7 +243,7 @@ function DashboardApiario({ apiaries, selectedId, setSelectedId, onAdd, onNaviga
 
       {/* SIDEBAR MOBILE */}
       <div className="md:hidden">
-        {! menuOpen && (
+        {!menuOpen && (
           <button
             onClick={() => setMenuOpen(true)}
             className="fixed top-4 left-4 z-50 p-3 rounded-full bg-white shadow-md hover:bg-gray-100 transition"
@@ -145,13 +254,11 @@ function DashboardApiario({ apiaries, selectedId, setSelectedId, onAdd, onNaviga
 
         {menuOpen && (
           <>
-            {/* OVERLAY */}
             <div
               className="fixed inset-0 bg-black/30 z-40"
               onClick={() => setMenuOpen(false)}
             />
             
-            {/* MENU MOBILE */}
             <div className="fixed inset-y-0 left-0 z-50 w-80">
               <Card className="h-full rounded-r-3xl bg-white/90 shadow-lg backdrop-blur-md m-4 overflow-hidden flex flex-col">
                 <CardHeader className="space-y-4 p-8">
@@ -164,8 +271,9 @@ function DashboardApiario({ apiaries, selectedId, setSelectedId, onAdd, onNaviga
                         <img src={icona_menu} alt="Chiudi menu" className="w-7 h-7" />
                       </button>
 
+                      {/* ✅ TASTO IMPOSTAZIONI MOBILE AGGIORNATO */}
                       <button 
-                        onClick={onNavigateToTaratura}
+                        onClick={handleSettingsClick} 
                         className="p-2 rounded-full hover:bg-gray-200 transition"
                       >
                         <img src={icona_impostazioni} alt="Impostazioni" className="w-7 h-7" />
@@ -186,43 +294,54 @@ function DashboardApiario({ apiaries, selectedId, setSelectedId, onAdd, onNaviga
                 </CardHeader>
 
                 <CardContent className="p-8 pt-0 flex-1 overflow-y-auto">
-                  <div className="flex flex-col gap-4">
-                    {apiaries.length === 0 ?  (
-                      <div className="text-sm text-gray-500">Nessuna arnia.  Premi "Aggiungi" per crearne una.</div>
-                    ) : (
-                      apiaries.map((a) => {
-                        const isSelected = a.id === selectedId;
-                        return (
-                          <button
-                            key={a.id}
-                            onClick={() => {
-                              setSelectedId(a.id);
-                              setMenuOpen(false);
-                            }}
-                            className={`w-full rounded-xl flex items-center gap-4 px-5 py-4 transition font-bold text-lg text-left relative
-                              ${isSelected ? "bg-orange-500 text-white" : "bg-amber-200 text-black hover:bg-amber-300"}`}
-                          >
-                            <img src={icona_alveare} alt="Arnia" className="w-7 h-7" />
-                            <span>{a.name}</span>
-                            {a.notifiche && (
-                              <span className="absolute right-4 top-3 bg-red-500 text-white text-sm w-6 h-6 rounded-full flex items-center justify-center font-bold">
-                                {a.notifiche}
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })
-                    )}
-                  </div>
+                  {loading && (
+                    <div className="text-center text-gray-600 py-4">
+                      Caricamento...
+                    </div>
+                  )}
+
+                  {!loading && (
+                    <div className="flex flex-col gap-4">
+                      {apiaries.length === 0 ? (
+                        <div className="text-sm text-gray-500 text-center py-4">
+                          <p>Nessuna arnia trovata.</p>
+                        </div>
+                      ) : (
+                        apiaries.map((a) => {
+                          const isSelected = a.id === selectedId;
+                          return (
+                            <button
+                              key={a.id}
+                              onClick={() => {
+                                setSelectedId(a.id);
+                                setMenuOpen(false);
+                              }}
+                              className={`w-full rounded-xl flex items-center gap-4 px-5 py-4 transition font-bold text-lg text-left relative
+                                ${isSelected ? "bg-orange-500 text-white" : "bg-amber-200 text-black hover:bg-amber-300"}`}
+                            >
+                              <img src={icona_alveare} alt="Arnia" className="w-7 h-7" />
+                              <span>{a.name}</span>
+                              {a.notifiche > 0 && (
+                                <span className="absolute right-4 top-3 bg-red-500 text-white text-sm w-6 h-6 rounded-full flex items-center justify-center font-bold">
+                                  {a.notifiche}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
                 </CardContent>
 
                 <CardFooter className="p-8 pt-0">
                   <Button
-                    onClick={onAdd}
-                    className="w-full bg-amber-200 text-black font-bold text-lg px-5 py-4 hover:bg-amber-300 rounded-xl flex items-center gap-3 justify-center"
+                    onClick={loadApiaries}
+                    disabled={loading}
+                    className="w-full bg-amber-200 text-black font-bold text-lg px-5 py-4 hover:bg-amber-300 rounded-xl flex items-center gap-3 justify-center disabled:opacity-50"
                   >
-                    <span className="text-xl">＋</span>
-                    <span>Aggiungi</span>
+                    <span className="text-xl">↻</span>
+                    <span>Aggiorna</span>
                   </Button>
                 </CardFooter>
               </Card>
@@ -235,9 +354,7 @@ function DashboardApiario({ apiaries, selectedId, setSelectedId, onAdd, onNaviga
       <div className="flex-1 p-4 md:p-8">
         <div className="max-w-7xl mx-auto">
           
-          {/* HEADER CON CHECKMARK - SFUMATO VERDE FUORI DAL DIV BIANCO */}
           <div className="mb-6 relative">
-            {/* Layer sfumato verde con blur - DIETRO TUTTO */}
             <div className="absolute inset-0 flex items-center justify-center overflow-hidden" style={{ height: '200px' }}>
               <div 
                 className="w-full h-full blur-2xl opacity-60"
@@ -247,7 +364,6 @@ function DashboardApiario({ apiaries, selectedId, setSelectedId, onAdd, onNaviga
               />
             </div>
 
-            {/* Contenuto "Ok" sopra lo sfumato */}
             <div className="relative z-10 flex items-center justify-between px-6 py-6">
               <div className="flex items-center gap-4">
                 <svg className="w-16 h-16 text-black drop-shadow-lg" fill="currentColor" viewBox="0 0 20 20">
@@ -257,21 +373,20 @@ function DashboardApiario({ apiaries, selectedId, setSelectedId, onAdd, onNaviga
               </div>
 
               <div className="text-right">
-                <p className="text-black font-normal text-sm"><b>Posizione:  Umbertide</b></p>
+                <p className="text-black font-normal text-sm"><b>Posizione: Umbertide</b></p>
                 <p className="text-black font-normal text-sm"><b>Data di inizio: 19/01/2026</b></p>
               </div>
             </div>
           </div>
 
-          {/* GRAFICO - DIV BIANCO SEPARATO */}
           <div className="bg-white/90 rounded-3xl shadow-lg backdrop-blur-md p-8 mb-6">
             <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
               <div className="flex items-center gap-4 flex-wrap">
                 <h3 className="font-bold text-2xl">Grafici</h3>
                 <button
-                  onClick={() => setShowTemperatura(! showTemperatura)}
+                  onClick={() => setShowTemperatura(!showTemperatura)}
                   className={`px-4 py-2 rounded-full font-semibold transition ${
-                    showTemperatura ?  'bg-blue-600 text-white' : 'bg-gray-200 text-black'
+                    showTemperatura ? 'bg-blue-600 text-white' : 'bg-gray-200 text-black'
                   }`}
                 >
                   Temperatura
@@ -287,7 +402,7 @@ function DashboardApiario({ apiaries, selectedId, setSelectedId, onAdd, onNaviga
                 <button
                   onClick={() => setShowPeso(!showPeso)}
                   className={`px-4 py-2 rounded-full font-semibold transition ${
-                    showPeso ? 'bg-red-600 text-white' :  'bg-gray-200 text-black'
+                    showPeso ? 'bg-red-600 text-white' : 'bg-gray-200 text-black'
                   }`}
                 >
                   Peso
@@ -310,7 +425,7 @@ function DashboardApiario({ apiaries, selectedId, setSelectedId, onAdd, onNaviga
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                   data={[
-                    { giorno: "1", temperatura: 20, umidita:  65, peso: 45 },
+                    { giorno: "1", temperatura: 20, umidita: 65, peso: 45 },
                     { giorno: "5", temperatura: 22, umidita: 70, peso: 46 },
                     { giorno: "10", temperatura: 24, umidita: 68, peso: 47 },
                     { giorno: "15", temperatura: 23, umidita: 72, peso: 48 },
@@ -324,7 +439,6 @@ function DashboardApiario({ apiaries, selectedId, setSelectedId, onAdd, onNaviga
                   <Tooltip />
                   <Legend />
                   
-                  {/* Soglia Temperatura Massima */}
                   <ReferenceLine 
                     y={sogliaTemperaturaMax} 
                     stroke="#ef4444" 
@@ -332,7 +446,6 @@ function DashboardApiario({ apiaries, selectedId, setSelectedId, onAdd, onNaviga
                     label={{ value: 'Soglia di temperatura', position: 'insideTopLeft', fill: '#000', fontWeight: 'normal' }}
                   />
                   
-                  {/* Soglia Peso Minimo */}
                   <ReferenceLine 
                     y={sogliaPesoMin} 
                     stroke="#6b7280" 
@@ -348,15 +461,13 @@ function DashboardApiario({ apiaries, selectedId, setSelectedId, onAdd, onNaviga
             </div>
           </div>
 
-          {/* SENSORI E NOTIFICHE */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* SENSORI */}
             <div className="bg-white/90 rounded-3xl shadow-lg backdrop-blur-md p-8">
               <h3 className="font-bold text-2xl mb-6">Sensori</h3>
               <div className="space-y-6">
                 <div className="flex items-center gap-4">
                   <img src={icona_goccia} alt="Umidità" className="w-8 h-8" />
-                  <span className="font-normal text-lg">Umidità:  <span className="font-semibold">8%</span></span>
+                  <span className="font-normal text-lg">Umidità: <span className="font-semibold">8%</span></span>
                 </div>
                 <div className="flex items-center gap-4">
                   <img src={icona_termometro} alt="Temperatura" className="w-8 h-8" />
@@ -369,14 +480,13 @@ function DashboardApiario({ apiaries, selectedId, setSelectedId, onAdd, onNaviga
               </div>
             </div>
 
-            {/* NOTIFICHE */}
             <div className="lg:col-span-2 bg-white/90 rounded-3xl shadow-lg backdrop-blur-md p-8">
               <h3 className="font-bold text-2xl mb-6">Notifiche</h3>
               <div className="bg-amber-200 rounded-2xl p-6 flex items-start gap-4">
                 <IconaAvviso className="w-8 h-8 mt-1 text-orange-600" />
                 <div>
                   <p className="font-bold text-lg text-black">Possibile Fecondazione</p>
-                  <p className="text-black font-normal">Sono stati rilevati numerosi fuchi fuori dall'arnia, Controllare. </p>
+                  <p className="text-black font-normal">Sono stati rilevati numerosi fuchi fuori dall'arnia, Controllare.</p>
                 </div>
               </div>
             </div>
