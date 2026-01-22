@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import sfondoTaratura from '../../assets/sfondo2.png';
-import checklistIcon from '../../assets/icona_menu.svg'; // placeholder, checklist_rtl.svg not found
+import checklistIcon from '../../assets/icona_menu.svg'; 
 import iconaGoccia from '../../assets/icona_goccia.svg';
 import iconaTermometro from '../../assets/icona_termometro.svg';
 import iconaPeso from '../../assets/icona_peso.svg';
@@ -74,8 +74,8 @@ function ConfiguraApiario({ onSave }) {
                     className="w-full rounded-lg border-0 bg-amber-100 px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400"
                   >
                     <option>Umbertide</option>
-                    <option>Perugia</option>
-                    <option>Terni</option>
+                    <option>Città di Castello</option>
+                    <option>Monte Santa Maria Tiberina</option>
                   </select>
                 </div>
               </div>
