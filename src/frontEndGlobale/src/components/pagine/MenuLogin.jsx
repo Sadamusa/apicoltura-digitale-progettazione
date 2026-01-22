@@ -5,8 +5,10 @@ import iconaAlveare from '../../assets/icona_alveare.svg';
 function MenuLogin({ onLoginSuccess }) {
   const [apiKey, setApiKey] = useState('');
 
+  const api = '114337de72d8ef5a56853ac836b2d461c21b5';
+
   const handleLogin = () => {
-    if (apiKey === 'admin') {
+    if (apiKey === api) {
       onLoginSuccess();
     }
   };
@@ -40,7 +42,7 @@ function MenuLogin({ onLoginSuccess }) {
 
         <button
           onClick={handleLogin}
-          className="w-full bg-amber-500 hover: bg-amber-600 text-white font-bold text-lg py-3 px-4 rounded-lg transition-colors"
+          className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold text-lg py-3 px-4 rounded-lg transition-colors focus:outline-none focus:ring-4 focus:ring-amber-300 hover:shadow-[0_0_16px_4px_rgba(245,158,11,0.6)] active:shadow-[0_0_24px_8px_rgba(245,158,11,0.8)]"
         >
           Login
         </button>
