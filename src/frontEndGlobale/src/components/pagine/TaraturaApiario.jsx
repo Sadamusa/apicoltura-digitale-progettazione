@@ -1,467 +1,354 @@
 import { useState, useEffect } from 'react';
-import sfondoTaratura from '../../assets/sfondo2.png';
+// Assicurati che i percorsi delle immagini siano corretti per la tua cartella
+import sfondoTaratura from '../../assets/sfondo2.png'; 
 import frecciaIndietro from '../../assets/FrecciaIndietro.svg';
 import iconaGoccia from '../../assets/icona_goccia.svg';
 import iconaTermometro from '../../assets/icona_termometro.svg';
 import iconaPeso from '../../assets/icona_peso.svg';
 
-function TaraturaApiario({ selectedApiario, onDelete, onBackToSidebar }) {
+function TaraturaApiario({ selectedArnia, onBackToSidebar }) {
+  // Stati per i valori dei sensori
   const [humidity, setHumidity] = useState({ min: '', max: '' });
   const [temperature, setTemperature] = useState({ min: '', max: '' });
   const [weight, setWeight] = useState({ min: '', max: '' });
-  const [sensors, setSensors] = useState({});
-  const [sensorTypes, setSensorTypes] = useState({});
+  
+  // Stati per la gestione dati DB
+  const [sensors, setSensors] = useState({}); // Mappa i sensori trovati
+  const [sensorTypes, setSensorTypes] = useState({}); // Mappa gli ID dei tipi
   const [loading, setLoading] = useState(false);
 
-  const API_URL = 'https://databaseclone2-bc78.restdb.io/rest';
-  const API_KEY = '6971db543731f717573fd80a';
+  // CONFIGURAZIONE API
+  const API_URL = 'https://databasesagomato2316-f801.restdb.io/rest';
+  const API_KEY = '6971f2593731f762e33fd827';
 
-  // Carica i tipi di rilevazione dal database
+  // 1. Al caricamento della pagina, scarichiamo i TIPI di sensore
   useEffect(() => {
     loadSensorTypes();
   }, []);
 
-  // Carica i sensori quando viene selezionata un'arnia
+  // 2. Quando abbiamo i TIPI e un'ARNIA selezionata, scarichiamo i suoi SENSORI
   useEffect(() => {
-    if (selectedApiario && (selectedApiario.arn_id !== undefined || selectedApiario.id !== undefined)) {
+    // Controllo di sicurezza: verifichiamo che selectedArnia esista e abbia un ID
+    if (selectedArnia && (selectedArnia.arn_id || selectedArnia.id) && Object.keys(sensorTypes).length > 0) {
       loadSensors();
     }
-  }, [selectedApiario, sensorTypes]);
+  }, [selectedArnia, sensorTypes]);
+
+  // --- FUNZIONI DI CARICAMENTO ---
 
   const loadSensorTypes = async () => {
     try {
-      const response = await fetch(`${API_URL}/tipirilevazione`, {
+      const response = await fetch(`${API_URL}/tipo`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-apikey': API_KEY,
-          'cache-control': 'no-cache'
+        headers: { 
+            'Content-Type': 'application/json', 
+            'x-apikey': API_KEY,
+            'cache-control': 'no-cache'
         }
       });
-
-      if (!response.ok) {
-        throw new Error('Errore nel caricamento dei tipi di rilevazione');
-      }
-
       const types = await response.json();
-      console.log('Tipi di rilevazione caricati:', types);
       
-      // Crea una mappa tipo -> id
       const typeMap = {};
-      types.forEach(type => {
-        const tipoLower = type.tipo?.toLowerCase();
-        if (tipoLower) {
-          if (tipoLower.includes('umid')) {
-            typeMap.HUMIDITY = type._id;
-          } else if (tipoLower.includes('temp')) {
-            typeMap.TEMPERATURE = type._id;
-          } else if (tipoLower.includes('peso')) {
-            typeMap.WEIGHT = type._id;
-          }
-        }
+      // Mappiamo gli ID in base alla descrizione nel DB
+      types.forEach(t => {
+        const desc = t.tip_descrizione ? t.tip_descrizione.toLowerCase() : '';
+        if (desc.includes('umid')) typeMap['HUMIDITY'] = t.tip_id;
+        else if (desc.includes('temp')) typeMap['TEMPERATURE'] = t.tip_id;
+        else if (desc.includes('peso')) typeMap['WEIGHT'] = t.tip_id;
       });
-      
-      console.log('Mappa tipi sensore:', typeMap);
       setSensorTypes(typeMap);
-
     } catch (error) {
-      console.error('Errore nel caricamento dei tipi:', error);
-      alert('Errore nel caricamento dei tipi di rilevazione');
+      console.error("Errore caricamento tipi:", error);
     }
   };
 
   const loadSensors = async () => {
-    if (Object.keys(sensorTypes).length === 0) {
-      console.log('Tipi sensore non ancora caricati');
+    if (!selectedArnia) return;
+    setLoading(true);
+
+    try {
+      // Usa arn_id se esiste, altrimenti usa id (fallback)
+      const idDaCercare = selectedArnia.arn_id || selectedArnia.id;
+      console.log("Cerco sensori per arnia ID:", idDaCercare);
+
+      const query = JSON.stringify({ "sen_arn_id": idDaCercare });
+      
+      const response = await fetch(`${API_URL}/sensore?q=${query}`, {
+        method: 'GET',
+        headers: { 
+            'Content-Type': 'application/json', 
+            'x-apikey': API_KEY,
+            'cache-control': 'no-cache'
+        }
+      });
+      
+      const data = await response.json();
+      console.log("Sensori trovati:", data);
+
+      const sensorsObj = {};
+      
+      // Organizza i sensori trovati in base al loro TIPO
+      data.forEach(s => {
+        sensorsObj[s.sen_tip_id] = s;
+      });
+      setSensors(sensorsObj);
+
+      // Riempie le textbox con i valori attuali
+      if (sensorTypes.HUMIDITY && sensorsObj[sensorTypes.HUMIDITY]) {
+        setHumidity({ 
+            min: sensorsObj[sensorTypes.HUMIDITY].sen_min ?? '', 
+            max: sensorsObj[sensorTypes.HUMIDITY].sen_max ?? '' 
+        });
+      }
+      if (sensorTypes.TEMPERATURE && sensorsObj[sensorTypes.TEMPERATURE]) {
+        setTemperature({ 
+            min: sensorsObj[sensorTypes.TEMPERATURE].sen_min ?? '', 
+            max: sensorsObj[sensorTypes.TEMPERATURE].sen_max ?? '' 
+        });
+      }
+      if (sensorTypes.WEIGHT && sensorsObj[sensorTypes.WEIGHT]) {
+        setWeight({ 
+            min: sensorsObj[sensorTypes.WEIGHT].sen_min ?? '', 
+            max: sensorsObj[sensorTypes.WEIGHT].sen_max ?? '' 
+        });
+      }
+
+    } catch (error) {
+      console.error("Errore caricamento sensori:", error);
+      alert("Errore nel recupero dati sensori");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- FUNZIONE DI SALVATAGGIO ---
+
+  const handleSave = async (category) => {
+    setLoading(true);
+    let typeId, values, label;
+
+    if (category === 'humidity') {
+      typeId = sensorTypes.HUMIDITY;
+      values = humidity;
+      label = "Umidità";
+    } else if (category === 'temperature') {
+      typeId = sensorTypes.TEMPERATURE;
+      values = temperature;
+      label = "Temperatura";
+    } else if (category === 'weight') {
+      typeId = sensorTypes.WEIGHT;
+      values = weight;
+      label = "Peso";
+    }
+
+    const currentSensor = sensors[typeId];
+
+    if (!currentSensor || !currentSensor._id) {
+      alert(`Errore: Nessun sensore ${label} trovato per questa arnia nel database.`);
+      setLoading(false);
       return;
     }
 
+    // FIX: Gestione valori vuoti per evitare NaN
+    const valMin = values.min === '' ? 0 : parseFloat(values.min);
+    const valMax = values.max === '' ? 0 : parseFloat(values.max);
+
     try {
-      setLoading(true);
-      
-      // Recupera l'ID dell'arnia
-      //const arniaId = selectedApiario.arn_id !== undefined ? selectedApiario.arn_id : selectedApiario.id;
-      
-      const arniaId = 5;
-      
-      console.log('Caricamento sensori per arnia ID:', arniaId);
-      
-      // Recupera tutti i sensori dell'arnia dalla tabella sensoriarnia
-      const response = await fetch(`${API_URL}/sensoriarnia?q={"sea_arn_id":${arniaId}}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-apikey': API_KEY,
-          'cache-control': 'no-cache'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Errore nel caricamento dei sensori');
-      }
-
-      const sensorsData = await response.json();
-      console.log('Sensori caricati:', sensorsData);
-      
-      // Organizza i sensori per tipo
-      const sensorsByType = {};
-      sensorsData.forEach(sensor => {
-        sensorsByType[sensor.sea_tip_id] = sensor;
-      });
-      
-      setSensors(sensorsByType);
-
-      // Popola i campi con i valori esistenti
-      if (sensorTypes.HUMIDITY && sensorsByType[sensorTypes.HUMIDITY]) {
-        const humiditySensor = sensorsByType[sensorTypes.HUMIDITY];
-        setHumidity({
-          min: humiditySensor.sea_min || '',
-          max: humiditySensor.sea_max || ''
-        });
-      }
-
-      if (sensorTypes.TEMPERATURE && sensorsByType[sensorTypes.TEMPERATURE]) {
-        const tempSensor = sensorsByType[sensorTypes.TEMPERATURE];
-        setTemperature({
-          min: tempSensor.sea_min || '',
-          max: tempSensor.sea_max || ''
-        });
-      }
-
-      if (sensorTypes.WEIGHT && sensorsByType[sensorTypes.WEIGHT]) {
-        const weightSensor = sensorsByType[sensorTypes.WEIGHT];
-        setWeight({
-          min: weightSensor.sea_min || '',
-          max: weightSensor.sea_max || ''
-        });
-      }
-
-    } catch (error) {
-      console.error('Errore nel caricamento dei sensori:', error);
-      alert('Errore nel caricamento dei dati dei sensori. Verifica la console per dettagli.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateSensor = async (sensorId, minValue, maxValue) => {
-    try {
-      console.log('Aggiornamento sensore:', { sensorId, minValue, maxValue });
-      
-      const response = await fetch(`${API_URL}/sensoriarnia/${sensorId}`, {
+      const response = await fetch(`${API_URL}/sensore/${currentSensor._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'x-apikey': API_KEY,
-          'cache-control': 'no-cache'
+          'x-apikey': API_KEY
         },
         body: JSON.stringify({
-          sea_min: parseFloat(minValue),
-          sea_max: parseFloat(maxValue)
+          sen_min: valMin,
+          sen_max: valMax
         })
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Errore risposta API:', errorText);
-        throw new Error('Errore nell\'aggiornamento del sensore');
+      if (response.ok) {
+        alert(`Taratura ${label} salvata con successo!`);
+        loadSensors(); 
+      } else {
+        alert("Errore durante il salvataggio.");
       }
-
-      const result = await response.json();
-      console.log('Sensore aggiornato con successo:', result);
-      return result;
     } catch (error) {
-      console.error('Errore nell\'aggiornamento del sensore:', error);
-      throw error;
-    }
-  };
-
-  const handleSave = async (type) => {
-    try {
-      setLoading(true);
-
-      let sensor;
-      let values;
-      let typeName;
-      let sensorTypeId;
-
-      // Determina quale sensore aggiornare in base al tipo
-      switch (type) {
-        case 'humidity':
-          sensorTypeId = sensorTypes.HUMIDITY;
-          sensor = sensors[sensorTypeId];
-          values = humidity;
-          typeName = 'Umidità';
-          break;
-        case 'temperature': 
-          sensorTypeId = sensorTypes.TEMPERATURE;
-          sensor = sensors[sensorTypeId];
-          values = temperature;
-          typeName = 'Temperatura';
-          break;
-        case 'weight':
-          sensorTypeId = sensorTypes.WEIGHT;
-          sensor = sensors[sensorTypeId];
-          values = weight;
-          typeName = 'Peso';
-          break;
-        default: 
-          throw new Error('Tipo di sensore non valido');
-      }
-
-      if (!sensorTypeId) {
-        alert(`Tipo ${typeName} non trovato nel database. Verifica la tabella Tipirilevazione.`);
-        return;
-      }
-
-      if (!sensor || !sensor._id) {
-        alert(`Sensore ${typeName} non trovato per questa arnia. Verifica che il sensore sia stato creato nella tabella Sensoriarnia con sea_arn_id=${selectedApiario.arn_id || selectedApiario.id} e sea_tip_id=${sensorTypeId}`);
-        console.error('Sensore non trovato:', { 
-          type, 
-          sensorTypeId, 
-          sensor, 
-          allSensors: sensors 
-        });
-        return;
-      }
-
-      // Validazione
-      if (!values.min || !values.max) {
-        alert('Inserisci sia il valore minimo che massimo');
-        return;
-      }
-
-      const minVal = parseFloat(values.min);
-      const maxVal = parseFloat(values.max);
-
-      if (isNaN(minVal) || isNaN(maxVal)) {
-        alert('Inserisci valori numerici validi');
-        return;
-      }
-
-      if (minVal >= maxVal) {
-        alert('Il valore minimo deve essere inferiore al massimo');
-        return;
-      }
-
-      // Aggiorna il sensore
-      await updateSensor(sensor._id, values.min, values.max);
-
-      alert(`Taratura ${typeName} salvata con successo!`);
-      
-      // Ricarica i sensori per aggiornare i dati
-      await loadSensors();
-
-    } catch (error) {
-      console.error('Errore nel salvataggio:', error);
-      alert(`Errore nel salvataggio della taratura: ${error.message}`);
+      console.error("Errore save:", error);
+      alert("Errore di connessione.");
     } finally {
       setLoading(false);
     }
   };
 
+  // Se non c'è arnia selezionata (fallback UI)
+  if (!selectedArnia) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-8 bg-gray-100">
+        <div className="text-center">
+            <h2 className="text-2xl font-bold text-red-600">Nessuna Arnia Selezionata</h2>
+            <p className="text-gray-600 mb-4">Torna alla dashboard e seleziona un'arnia prima di configurarla.</p>
+            <button onClick={onBackToSidebar} className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Torna indietro</button>
+        </div>
+      </div>
+    );
+  }
+
+  // Nome visualizzato
+  const nomeArniaDisplay = selectedArnia.name || `Arnia #${selectedArnia.arn_id}`; 
+
   return (
     <div
-      className="flex min-h-screen items-center justify-center p-8"
+      className="flex min-h-screen items-center justify-center p-4 md:p-8"
       style={{
         backgroundImage: `url(${sfondoTaratura})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center'
       }}
     >
-      <div className="w-full max-w-4xl">
-        <div className="rounded-3xl bg-white/70 p-8 shadow-xl backdrop-blur-md">
-          <div className="mb-12 flex items-center justify-between">
-            <div className="flex items-baseline gap-2 font-bold text-black-800">
+      <div className="w-full max-w-5xl">
+        <div className="rounded-3xl bg-white/80 p-6 md:p-8 shadow-2xl backdrop-blur-md border border-white/50">
+          
+          {/* HEADER */}
+          <div className="mb-8 flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-4">
               <button
                 onClick={onBackToSidebar}
-                className="bg-transparent border-0 p-0 cursor-pointer hover:opacity-80 transition"
-                disabled={loading}
+                className="group rounded-full bg-white/50 p-2 transition hover:bg-orange-100"
               >
-                <img
-                  src={frecciaIndietro}
-                  alt="FrecciaIndietro"
-                  className="h-8 w-8"
+                <img 
+                    src={frecciaIndietro} 
+                    alt="Indietro" 
+                    className="h-6 w-6 transition group-hover:-translate-x-1" 
                 />
               </button>
-              <span className="text-5xl">Taratura</span>
-              <span className="text-2xl">
-                {selectedApiario ? selectedApiario.name || `Arnia ${selectedApiario.arn_id || selectedApiario.id}` : 'Arnia'}
-              </span>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-800">Taratura Sensori</h1>
+                <p className="text-xl font-semibold text-orange-600">{nomeArniaDisplay}</p>
+              </div>
             </div>
-            <button
-              onClick={onDelete}
-              className="rounded-lg bg-gray-500 px-8 py-2 font-semibold text-white transition hover:bg-red-600"
-              disabled={loading}
-            >
-              Elimina Arnia
-            </button>
+            {loading && <span className="text-sm font-bold text-orange-500 animate-pulse">Salvataggio in corso...</span>}
           </div>
 
-          {loading && (
-            <div className="mb-4 text-center text-gray-600">
-              Caricamento in corso...
-            </div>
-          )}
-
-          <div className="grid gap-8 md:grid-cols-3">
-            {/* Umidità */}
-            <div className="space-y-4">
+          {/* GRIGLIA CONFIGURAZIONE */}
+          <div className="grid gap-6 md:grid-cols-3">
+            
+            {/* CARD UMIDITÀ */}
+            <div className="rounded-2xl bg-white p-6 shadow-lg transition hover:shadow-xl">
               <div className="mb-6 flex justify-center">
-                <div className="rounded-full bg-blue-50 p-6">
-                  <img
-                    src={iconaGoccia}
-                    alt="Umidità"
-                    className="h-22 w-22"
-                  />
+                <div className="rounded-full bg-blue-50 p-4 ring-4 ring-blue-50/50">
+                  <img src={iconaGoccia} alt="Umidità" className="h-16 w-16" />
                 </div>
               </div>
+              <h3 className="mb-4 text-center text-xl font-bold text-gray-700">Umidità</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-600">
-                    Minimo (%)
-                  </label>
+                  <label className="mb-1 block text-sm font-semibold text-gray-500">Minima (%)</label>
                   <input
                     type="number"
                     value={humidity.min}
                     onChange={(e) => setHumidity({ ...humidity, min: e.target.value })}
-                    className="w-full rounded-lg border-0 bg-amber-100 px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="w-full rounded-xl border-0 bg-gray-100 px-4 py-3 font-medium text-gray-800 focus:ring-2 focus:ring-blue-400"
                     placeholder="0"
-                    disabled={loading}
-                    step="0.01"
                   />
                 </div>
-
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-600">
-                    Massimo (%)
-                  </label>
+                  <label className="mb-1 block text-sm font-semibold text-gray-500">Massima (%)</label>
                   <input
                     type="number"
                     value={humidity.max}
                     onChange={(e) => setHumidity({ ...humidity, max: e.target.value })}
-                    className="w-full rounded-lg border-0 bg-amber-100 px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="w-full rounded-xl border-0 bg-gray-100 px-4 py-3 font-medium text-gray-800 focus:ring-2 focus:ring-blue-400"
                     placeholder="100"
-                    disabled={loading}
-                    step="0.01"
                   />
                 </div>
-
                 <button
                   onClick={() => handleSave('humidity')}
-                  className="w-full rounded-lg bg-orange-500 py-3 font-semibold text-black transition hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={loading}
+                  className="mt-2 w-full rounded-xl bg-blue-500 py-3 font-bold text-white transition hover:bg-blue-600 disabled:opacity-50"
                 >
-                  Salva
+                  Salva Umidità
                 </button>
               </div>
             </div>
 
-            {/* Temperatura */}
-            <div className="space-y-4">
+            {/* CARD TEMPERATURA */}
+            <div className="rounded-2xl bg-white p-6 shadow-lg transition hover:shadow-xl">
               <div className="mb-6 flex justify-center">
-                <div className="rounded-full bg-red-50 p-6">
-                  <img
-                    src={iconaTermometro}
-                    alt="Temperatura"
-                    className="h-22 w-22"
-                  />
+                <div className="rounded-full bg-red-50 p-4 ring-4 ring-red-50/50">
+                  <img src={iconaTermometro} alt="Temperatura" className="h-16 w-16" />
                 </div>
               </div>
-
+              <h3 className="mb-4 text-center text-xl font-bold text-gray-700">Temperatura</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-600">
-                    Minimo (°C)
-                  </label>
+                  <label className="mb-1 block text-sm font-semibold text-gray-500">Minima (°C)</label>
                   <input
                     type="number"
                     value={temperature.min}
                     onChange={(e) => setTemperature({ ...temperature, min: e.target.value })}
-                    className="w-full rounded-lg border-0 bg-amber-100 px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-400"
+                    className="w-full rounded-xl border-0 bg-gray-100 px-4 py-3 font-medium text-gray-800 focus:ring-2 focus:ring-red-400"
                     placeholder="0"
-                    disabled={loading}
-                    step="0.01"
                   />
                 </div>
-
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-600">
-                    Massimo (°C)
-                  </label>
+                  <label className="mb-1 block text-sm font-semibold text-gray-500">Massima (°C)</label>
                   <input
                     type="number"
                     value={temperature.max}
                     onChange={(e) => setTemperature({ ...temperature, max: e.target.value })}
-                    className="w-full rounded-lg border-0 bg-amber-100 px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-400"
+                    className="w-full rounded-xl border-0 bg-gray-100 px-4 py-3 font-medium text-gray-800 focus:ring-2 focus:ring-red-400"
                     placeholder="50"
-                    disabled={loading}
-                    step="0.01"
                   />
                 </div>
-
                 <button
                   onClick={() => handleSave('temperature')}
-                  className="w-full rounded-lg bg-orange-500 py-3 font-semibold text-black transition hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={loading}
+                  className="mt-2 w-full rounded-xl bg-red-500 py-3 font-bold text-white transition hover:bg-red-600 disabled:opacity-50"
                 >
-                  Salva
+                  Salva Temp.
                 </button>
               </div>
             </div>
 
-            {/* Peso */}
-            <div className="space-y-4">
+            {/* CARD PESO */}
+            <div className="rounded-2xl bg-white p-6 shadow-lg transition hover:shadow-xl">
               <div className="mb-6 flex justify-center">
-                <div className="rounded-full bg-gray-100 p-6">
-                  <img
-                    src={iconaPeso}
-                    alt="Peso"
-                    className="h-22 w-22"
-                  />
+                <div className="rounded-full bg-amber-50 p-4 ring-4 ring-amber-50/50">
+                  <img src={iconaPeso} alt="Peso" className="h-16 w-16" />
                 </div>
               </div>
-
+              <h3 className="mb-4 text-center text-xl font-bold text-gray-700">Peso</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-600">
-                    Minimo (kg)
-                  </label>
+                  <label className="mb-1 block text-sm font-semibold text-gray-500">Minimo (kg)</label>
                   <input
                     type="number"
                     value={weight.min}
                     onChange={(e) => setWeight({ ...weight, min: e.target.value })}
-                    className="w-full rounded-lg border-0 bg-amber-100 px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                    className="w-full rounded-xl border-0 bg-gray-100 px-4 py-3 font-medium text-gray-800 focus:ring-2 focus:ring-amber-400"
                     placeholder="0"
-                    disabled={loading}
-                    step="0.01"
                   />
                 </div>
-
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-600">
-                    Massimo (kg)
-                  </label>
+                  <label className="mb-1 block text-sm font-semibold text-gray-500">Massimo (kg)</label>
                   <input
                     type="number"
                     value={weight.max}
                     onChange={(e) => setWeight({ ...weight, max: e.target.value })}
-                    className="w-full rounded-lg border-0 bg-amber-100 px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                    className="w-full rounded-xl border-0 bg-gray-100 px-4 py-3 font-medium text-gray-800 focus:ring-2 focus:ring-amber-400"
                     placeholder="100"
-                    disabled={loading}
-                    step="0.01"
                   />
                 </div>
-
                 <button
                   onClick={() => handleSave('weight')}
-                  className="w-full rounded-lg bg-orange-500 py-3 font-semibold text-black transition hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={loading}
+                  className="mt-2 w-full rounded-xl bg-amber-500 py-3 font-bold text-white transition hover:bg-amber-600 disabled:opacity-50"
                 >
-                  Salva
+                  Salva Peso
                 </button>
               </div>
             </div>
+
           </div>
         </div>
       </div>
