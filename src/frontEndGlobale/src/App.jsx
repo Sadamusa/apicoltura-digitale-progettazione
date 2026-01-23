@@ -33,40 +33,22 @@ function HoneycombIcon({ className = "w-6 h-6" }) {
       <path d="M17 15.5L13.5 18v3.5L17 23 20.5 21.5V18L17 15.5z" fill="#E8CFA7"/>
     </svg>
   )
-}
+} 
 
 function App() {
   const [currentPage, setCurrentPage] = useState('MenuLogin')
 
-  // Lista di apiari: inizialmente vuota; si aggiunge uno ad ogni click su "Aggiungi"
-  const [apiaries, setApiaries] = useState([])
-
-  // ID dell'apiario selezionato (per evidenziare il primo o quello cliccato)
+  // ID dell'apiario selezionato
   const [selectedId, setSelectedId] = useState(null)
+  
+  // ✅ NUOVO: Stato per conservare l'arnia selezionata completa
+  const [selectedArnia, setSelectedArnia] = useState(null)
 
-  const addApiario = () => {
-    const nextIndex = apiaries.length + 1
-    const newItem = {
-      id: Date.now(),
-      name: `Arnia ${nextIndex}`,
-    }
-    const newList = [...apiaries, newItem]
-    setApiaries(newList)
-
-    // Se è il primo elemento aggiunto, selezioniamolo per evidenziarlo
-    if (newList.length === 1) setSelectedId(newItem.id)
-    
-    // Naviga alla pagina di configurazione
-    setCurrentPage('Configura')
-  }
-
-  const deleteApiario = () => {
-    if (selectedId) {
-      const newList = apiaries.filter(a => a.id !== selectedId)
-      setApiaries(newList)
-      setSelectedId(newList.length > 0 ? newList[0].id : null)
-      setCurrentPage('Sidebar')
-    }
+  // ✅ MODIFICATA: Funzione per navigare alla taratura
+  const handleNavigateToTaratura = (arniaObject) => {
+    console.log("📍 [App.js] Ricevuto oggetto arnia:", arniaObject);
+    setSelectedArnia(arniaObject); // Salva l'oggetto completo
+    setCurrentPage('Taratura');
   }
 
   return (
@@ -74,23 +56,23 @@ function App() {
       {currentPage === 'MenuLogin' && (
         <MenuLogin onLoginSuccess={() => setCurrentPage('Sidebar')} />
       )}
+      
       {currentPage === 'Sidebar' && (
         <DashboardApiario 
-          apiaries={apiaries}
           selectedId={selectedId}
           setSelectedId={setSelectedId}
-          onAdd={addApiario}
-          onNavigateToTaratura={() => setCurrentPage('Taratura')}
+          onNavigateToTaratura={handleNavigateToTaratura}
           onLogout={() => setCurrentPage('MenuLogin')}
         />
       )}
+      
       {currentPage === 'Configura' && (
         <ConfiguraApiario onSave={() => setCurrentPage('Sidebar')} />
       )}
+      
       {currentPage === 'Taratura' && (
         <TaraturaApiario 
-          selectedApiario={apiaries.find(a => a.id === selectedId)}
-          onDelete={deleteApiario}
+          selectedArnia={selectedArnia}
           onBackToSidebar={() => setCurrentPage('Sidebar')}
         />
       )}

@@ -1,200 +1,206 @@
 import { useState, useEffect } from 'react';
 // Assicurati che i percorsi delle immagini siano corretti per la tua cartella
-import sfondoTaratura from '../../assets/sfondo2.png'; 
+import sfondoTaratura from '../../assets/sfondo2.png';
 import frecciaIndietro from '../../assets/FrecciaIndietro.svg';
 import iconaGoccia from '../../assets/icona_goccia.svg';
 import iconaTermometro from '../../assets/icona_termometro.svg';
 import iconaPeso from '../../assets/icona_peso.svg';
 
 function TaraturaApiario({ selectedArnia, onBackToSidebar }) {
-  // Stati per i valori dei sensori
   const [humidity, setHumidity] = useState({ min: '', max: '' });
   const [temperature, setTemperature] = useState({ min: '', max: '' });
   const [weight, setWeight] = useState({ min: '', max: '' });
-  
-  // Stati per la gestione dati DB
-  const [sensors, setSensors] = useState({}); // Mappa i sensori trovati
-  const [sensorTypes, setSensorTypes] = useState({}); // Mappa gli ID dei tipi
+
+  const [sensors, setSensors] = useState({});
   const [loading, setLoading] = useState(false);
 
-  // CONFIGURAZIONE API
-  const API_URL = 'https://databasesagomato2316-f801.restdb.io/rest';
-  const API_KEY = '6971f2593731f762e33fd827';
+  const API_URL = 'https://norimbergamaxima-e90d.restdb.io/rest';
+  const API_KEY = '697209fd3731f74dc33fd839';
 
-  // 1. Al caricamento della pagina, scarichiamo i TIPI di sensore
-  useEffect(() => {
-    loadSensorTypes();
-  }, []);
+  // ID TIPI SENSORI
+  const SENSOR_TYPES = {
+    HUMIDITY: 10,
+    WEIGHT: 11,
+    TEMPERATURE: 12
+  };
 
-  // 2. Quando abbiamo i TIPI e un'ARNIA selezionata, scarichiamo i suoi SENSORI
   useEffect(() => {
-    // Controllo di sicurezza: verifichiamo che selectedArnia esista e abbia un ID
-    if (selectedArnia && (selectedArnia.arn_id || selectedArnia.id) && Object.keys(sensorTypes).length > 0) {
+    if (selectedArnia && (selectedArnia.arn_id || selectedArnia.id)) {
       loadSensors();
     }
-  }, [selectedArnia, sensorTypes]);
-
-  // --- FUNZIONI DI CARICAMENTO ---
-
-  const loadSensorTypes = async () => {
-    try {
-      const response = await fetch(`${API_URL}/tipo`, {
-        method: 'GET',
-        headers: { 
-            'Content-Type': 'application/json', 
-            'x-apikey': API_KEY,
-            'cache-control': 'no-cache'
-        }
-      });
-      const types = await response.json();
-      
-      const typeMap = {};
-      // Mappiamo gli ID in base alla descrizione nel DB
-      types.forEach(t => {
-        const desc = t.tip_descrizione ? t.tip_descrizione.toLowerCase() : '';
-        if (desc.includes('umid')) typeMap['HUMIDITY'] = t.tip_id;
-        else if (desc.includes('temp')) typeMap['TEMPERATURE'] = t.tip_id;
-        else if (desc.includes('peso')) typeMap['WEIGHT'] = t.tip_id;
-      });
-      setSensorTypes(typeMap);
-    } catch (error) {
-      console.error("Errore caricamento tipi:", error);
-    }
-  };
+  }, [selectedArnia]);
 
   const loadSensors = async () => {
     if (!selectedArnia) return;
     setLoading(true);
 
     try {
-      // Usa arn_id se esiste, altrimenti usa id (fallback)
       const idDaCercare = selectedArnia.arn_id || selectedArnia.id;
-      console.log("Cerco sensori per arnia ID:", idDaCercare);
+      console.log("🔍 Cerco sensori per arnia ID:", idDaCercare);
 
-      const query = JSON.stringify({ "sen_arn_id": idDaCercare });
-      
-      const response = await fetch(`${API_URL}/sensore?q=${query}`, {
+      const query = JSON.stringify({ "sea_arn_id": idDaCercare });
+
+      const response = await fetch(`${API_URL}/sensoriarnia?q=${query}`, {
         method: 'GET',
-        headers: { 
-            'Content-Type': 'application/json', 
-            'x-apikey': API_KEY,
-            'cache-control': 'no-cache'
+        headers: {
+          'Content-Type': 'application/json',
+          'x-apikey': API_KEY,
+          'cache-control': 'no-cache'
         }
       });
-      
+
+      if (!response.ok) {
+        throw new Error(`Errore HTTP ${response.status}`);
+      }
+
       const data = await response.json();
-      console.log("Sensori trovati:", data);
+      console.log("📊 Sensori trovati:", data);
 
       const sensorsObj = {};
-      
-      // Organizza i sensori trovati in base al loro TIPO
+
       data.forEach(s => {
-        sensorsObj[s.sen_tip_id] = s;
+        sensorsObj[s.sea_tip_id] = s;
+        console.log(`  → Sensore tipo ${s.sea_tip_id}:`, s);
       });
       setSensors(sensorsObj);
 
-      // Riempie le textbox con i valori attuali
-      if (sensorTypes.HUMIDITY && sensorsObj[sensorTypes.HUMIDITY]) {
-        setHumidity({ 
-            min: sensorsObj[sensorTypes.HUMIDITY].sen_min ?? '', 
-            max: sensorsObj[sensorTypes.HUMIDITY].sen_max ?? '' 
+      // Carica valori esistenti
+      if (sensorsObj[SENSOR_TYPES.HUMIDITY]) {
+        setHumidity({
+          min: sensorsObj[SENSOR_TYPES.HUMIDITY].sea_min ?? '',
+          max: sensorsObj[SENSOR_TYPES.HUMIDITY].sea_max ?? ''
         });
+        console.log("✅ Umidità caricata:", sensorsObj[SENSOR_TYPES.HUMIDITY]);
+      } else {
+        console.log("⚠️ Nessun sensore umidità (tip_id: 10) trovato per questa arnia");
       }
-      if (sensorTypes.TEMPERATURE && sensorsObj[sensorTypes.TEMPERATURE]) {
-        setTemperature({ 
-            min: sensorsObj[sensorTypes.TEMPERATURE].sen_min ?? '', 
-            max: sensorsObj[sensorTypes.TEMPERATURE].sen_max ?? '' 
+
+      if (sensorsObj[SENSOR_TYPES.TEMPERATURE]) {
+        setTemperature({
+          min: sensorsObj[SENSOR_TYPES.TEMPERATURE].sea_min ?? '',
+          max: sensorsObj[SENSOR_TYPES.TEMPERATURE].sea_max ?? ''
         });
+        console.log("✅ Temperatura caricata:", sensorsObj[SENSOR_TYPES.TEMPERATURE]);
+      } else {
+        console.log("⚠️ Nessun sensore temperatura (tip_id: 12) trovato per questa arnia");
       }
-      if (sensorTypes.WEIGHT && sensorsObj[sensorTypes.WEIGHT]) {
-        setWeight({ 
-            min: sensorsObj[sensorTypes.WEIGHT].sen_min ?? '', 
-            max: sensorsObj[sensorTypes.WEIGHT].sen_max ?? '' 
+
+      if (sensorsObj[SENSOR_TYPES.WEIGHT]) {
+        setWeight({
+          min: sensorsObj[SENSOR_TYPES.WEIGHT].sea_min ?? '',
+          max: sensorsObj[SENSOR_TYPES.WEIGHT].sea_max ?? ''
         });
+        console.log("✅ Peso caricato:", sensorsObj[SENSOR_TYPES.WEIGHT]);
+      } else {
+        console.log("⚠️ Nessun sensore peso (tip_id: 11) trovato per questa arnia");
       }
 
     } catch (error) {
-      console.error("Errore caricamento sensori:", error);
-      alert("Errore nel recupero dati sensori");
+      console.error("❌ Errore caricamento sensori:", error);
+      alert(`Errore nel recupero dati sensori: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
-
-  // --- FUNZIONE DI SALVATAGGIO ---
 
   const handleSave = async (category) => {
     setLoading(true);
     let typeId, values, label;
 
     if (category === 'humidity') {
-      typeId = sensorTypes.HUMIDITY;
+      typeId = SENSOR_TYPES.HUMIDITY;
       values = humidity;
       label = "Umidità";
     } else if (category === 'temperature') {
-      typeId = sensorTypes.TEMPERATURE;
+      typeId = SENSOR_TYPES.TEMPERATURE;
       values = temperature;
       label = "Temperatura";
     } else if (category === 'weight') {
-      typeId = sensorTypes.WEIGHT;
+      typeId = SENSOR_TYPES.WEIGHT;
       values = weight;
       label = "Peso";
     }
 
     const currentSensor = sensors[typeId];
 
+    console.log(`💾 Tentativo salvataggio ${label}:`, {
+      typeId,
+      currentSensor,
+      allSensors: sensors
+    });
+
     if (!currentSensor || !currentSensor._id) {
-      alert(`Errore: Nessun sensore ${label} trovato per questa arnia nel database.`);
+      alert(`❌ Errore: Nessun sensore ${label} (tipo ${typeId}) trovato per questa arnia nel database.\n\nSensori disponibili per questa arnia: tip_id ${Object.keys(sensors).join(', ')}`);
       setLoading(false);
       return;
     }
 
-    // FIX: Gestione valori vuoti per evitare NaN
     const valMin = values.min === '' ? 0 : parseFloat(values.min);
     const valMax = values.max === '' ? 0 : parseFloat(values.max);
 
     try {
-      const response = await fetch(`${API_URL}/sensore/${currentSensor._id}`, {
+      console.log(`🚀 Invio PUT a /sensoriarnia/${currentSensor._id}:`, {
+        sea_min: valMin,
+        sea_max: valMax
+      });
+
+      // ✅ CORREZIONE: Invia TUTTI i campi del sensore, non solo min/max
+      const updatedSensor = {
+        ...currentSensor,  // Mantieni tutti i campi esistenti
+        sea_min: valMin,   // Aggiorna solo min
+        sea_max: valMax    // Aggiorna solo max
+      };
+
+      // Rimuovi campi interni di RestDB
+      delete updatedSensor._id;
+      delete updatedSensor._created;
+      delete updatedSensor._changed;
+      delete updatedSensor._createdby;
+      delete updatedSensor._changedby;
+      delete updatedSensor._version;
+
+      console.log("📤 Invio dati completi:", updatedSensor);
+
+      const response = await fetch(`${API_URL}/sensoriarnia/${currentSensor._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'x-apikey': API_KEY
         },
-        body: JSON.stringify({
-          sen_min: valMin,
-          sen_max: valMax
-        })
+        body: JSON.stringify(updatedSensor)
       });
 
       if (response.ok) {
-        alert(`Taratura ${label} salvata con successo!`);
-        loadSensors(); 
+        const result = await response.json();
+        console.log("✅ Risposta salvataggio:", result);
+        alert(`✅ Taratura ${label} salvata con successo!\n\nNuovi valori: Min ${valMin}, Max ${valMax}`);
+        loadSensors();
       } else {
-        alert("Errore durante il salvataggio.");
+        const errorText = await response.text();
+        console.error("❌ Errore risposta:", errorText);
+        alert(`Errore durante il salvataggio: ${response.status}\n${errorText}`);
       }
     } catch (error) {
-      console.error("Errore save:", error);
-      alert("Errore di connessione.");
+      console.error("❌ Errore save:", error);
+      alert(`Errore di connessione: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // Se non c'è arnia selezionata (fallback UI)
   if (!selectedArnia) {
     return (
       <div className="flex min-h-screen items-center justify-center p-8 bg-gray-100">
         <div className="text-center">
-            <h2 className="text-2xl font-bold text-red-600">Nessuna Arnia Selezionata</h2>
-            <p className="text-gray-600 mb-4">Torna alla dashboard e seleziona un'arnia prima di configurarla.</p>
-            <button onClick={onBackToSidebar} className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Torna indietro</button>
+          <h2 className="text-2xl font-bold text-red-600">Nessuna Arnia Selezionata</h2>
+          <p className="text-gray-600 mb-4">Torna alla dashboard e seleziona un'arnia prima di configurarla.</p>
+          <button onClick={onBackToSidebar} className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Torna indietro</button>
         </div>
       </div>
     );
   }
 
-  // Nome visualizzato
-  const nomeArniaDisplay = selectedArnia.name || `Arnia #${selectedArnia.arn_id}`; 
+  const nomeArniaDisplay = selectedArnia.name || `Arnia #${selectedArnia.arn_id}`;
 
   return (
     <div
@@ -207,18 +213,17 @@ function TaraturaApiario({ selectedArnia, onBackToSidebar }) {
     >
       <div className="w-full max-w-5xl">
         <div className="rounded-3xl bg-white/80 p-6 md:p-8 shadow-2xl backdrop-blur-md border border-white/50">
-          
-          {/* HEADER */}
+
           <div className="mb-8 flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4">
               <button
                 onClick={onBackToSidebar}
                 className="group rounded-full bg-white/50 p-2 transition hover:bg-orange-100"
               >
-                <img 
-                    src={frecciaIndietro} 
-                    alt="Indietro" 
-                    className="h-6 w-6 transition group-hover:-translate-x-1" 
+                <img
+                  src={frecciaIndietro}
+                  alt="Indietro"
+                  className="h-6 w-6 transition group-hover:-translate-x-1"
                 />
               </button>
               <div>
@@ -226,13 +231,11 @@ function TaraturaApiario({ selectedArnia, onBackToSidebar }) {
                 <p className="text-xl font-semibold text-orange-600">{nomeArniaDisplay}</p>
               </div>
             </div>
-            {loading && <span className="text-sm font-bold text-orange-500 animate-pulse">Salvataggio in corso...</span>}
+            {loading && <span className="text-sm font-bold text-orange-500 animate-pulse">Operazione in corso...</span>}
           </div>
 
-          {/* GRIGLIA CONFIGURAZIONE */}
           <div className="grid gap-6 md:grid-cols-3">
-            
-            {/* CARD UMIDITÀ */}
+
             <div className="rounded-2xl bg-white p-6 shadow-lg transition hover:shadow-xl">
               <div className="mb-6 flex justify-center">
                 <div className="rounded-full bg-blue-50 p-4 ring-4 ring-blue-50/50">
@@ -271,7 +274,6 @@ function TaraturaApiario({ selectedArnia, onBackToSidebar }) {
               </div>
             </div>
 
-            {/* CARD TEMPERATURA */}
             <div className="rounded-2xl bg-white p-6 shadow-lg transition hover:shadow-xl">
               <div className="mb-6 flex justify-center">
                 <div className="rounded-full bg-red-50 p-4 ring-4 ring-red-50/50">
@@ -310,7 +312,6 @@ function TaraturaApiario({ selectedArnia, onBackToSidebar }) {
               </div>
             </div>
 
-            {/* CARD PESO */}
             <div className="rounded-2xl bg-white p-6 shadow-lg transition hover:shadow-xl">
               <div className="mb-6 flex justify-center">
                 <div className="rounded-full bg-amber-50 p-4 ring-4 ring-amber-50/50">
