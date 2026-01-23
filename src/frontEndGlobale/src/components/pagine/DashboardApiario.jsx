@@ -304,7 +304,7 @@ function DashboardApiario({ selectedId, setSelectedId, onNavigateToTaratura, onL
     <div
       className="min-h-screen flex bg-gray-100 relative"
       style={{
-        backgroundImage: "url('src/assets/Sfondo_configurazione.png')",
+        backgroundImage: "url('/Sfondo_configurazione.png')",
         backgroundSize: 'cover',
         backgroundPosition: 'center'
       }}
