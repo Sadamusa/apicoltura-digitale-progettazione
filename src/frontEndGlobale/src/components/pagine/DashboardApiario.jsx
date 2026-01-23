@@ -40,12 +40,17 @@ function DashboardApiario({ selectedId, setSelectedId, onNavigateToTaratura, onL
   const [chartData, setChartData] = useState([]);
   const [loadingSensors, setLoadingSensors] = useState(false);
 
-  const API_URL = 'https://norimbergamaxima-e90d.restdb.io/rest';
-  const API_KEY = '697209fd3731f74dc33fd839';
+  // AGGIUNGI QUESTO 👇
+  const [soglie, setSoglie] = useState({
+    temperaturaMax: 25,  // valori di default
+    pesoMin: 47,
+    umiditaMin: null,
+    umiditaMax: null
+  });
 
-  // Soglie (puoi caricarle dal DB se necessario)
-  const sogliaTemperaturaMax = 25;
-  const sogliaPesoMin = 47;
+  const API_URL = 'https://pumbastilizzato-e441.restdb.io/rest';
+  const API_KEY = '69733a6b3731f70ae53fd875';
+
 
   useEffect(() => {
     console.log('=== DashboardApiario montato ===');
@@ -143,9 +148,7 @@ function DashboardApiario({ selectedId, setSelectedId, onNavigateToTaratura, onL
       setLoadingSensors(true);
       console.log('📊 Caricamento dati sensore per arnia:', arniaId);
 
-      // 1. NON serve più caricare i modelli sensori, usiamo direttamente gli ID tipo
-
-      // 2. Carica i sensori dell'arnia dalla tabella "sensoriarnia"
+      // 1. Carica i sensori dell'arnia dalla tabella "sensoriarnia"
       const query = JSON.stringify({ "sea_arn_id": parseInt(arniaId) });
       const sensorsResponse = await fetch(`${API_URL}/sensoriarnia?q=${query}`, {
         method: 'GET',
@@ -166,10 +169,31 @@ function DashboardApiario({ selectedId, setSelectedId, onNavigateToTaratura, onL
         return;
       }
 
-      // 3. Identifica i sensori per tipo (CORREZIONE QUI)
+      // 2. Carica le soglie dai sensori
+      const newSoglie = {
+        temperaturaMax: 25,  // default
+        pesoMin: 47,
+        umiditaMin: null,
+        umiditaMax: null
+      };
+
+      sensors.forEach(s => {
+        if (s.sea_tip_id === 12) {  // Temperatura
+          newSoglie.temperaturaMax = s.sea_max || 25;
+        } else if (s.sea_tip_id === 10) {  // Umidità
+          newSoglie.umiditaMin = s.sea_min;
+          newSoglie.umiditaMax = s.sea_max;
+        } else if (s.sea_tip_id === 11) {  // Peso
+          newSoglie.pesoMin = s.sea_min || 47;
+        }
+      });
+
+      console.log('🎯 Soglie caricate:', newSoglie);
+      setSoglie(newSoglie);
+
+      // 3. Identifica i sensori per tipo
       const sensorTypes = {};
       sensors.forEach(s => {
-        // Usa direttamente gli ID tipo dalla tabella "tipo"
         if (s.sea_tip_id === 12) {
           sensorTypes['TEMPERATURE'] = s.sea_id;
         } else if (s.sea_tip_id === 10) {
@@ -410,22 +434,38 @@ function DashboardApiario({ selectedId, setSelectedId, onNavigateToTaratura, onL
       <div className="flex-1 p-4 md:p-8">
         <div className="max-w-7xl mx-auto">
 
+          {/* BANNER STATO - Dinamico in base alle notifiche */}
           <div className="mb-6 relative">
             <div className="absolute inset-0 flex items-center justify-center overflow-hidden" style={{ height: '200px' }}>
               <div
                 className="w-full h-full blur-2xl opacity-60"
                 style={{
-                  background: 'linear-gradient(to right, rgba(134, 239, 172, 0.4) 0%, rgba(74, 222, 128, 0.6) 30%, rgba(34, 197, 94, 0.7) 50%, rgba(74, 222, 128, 0.6) 70%, rgba(134, 239, 172, 0.4) 100%)'
+                  background: (sensorData.temperatura !== null && sensorData.temperatura > soglie.temperaturaMax) ||
+                    (sensorData.peso !== null && sensorData.peso < soglie.pesoMin)
+                    ? 'linear-gradient(to right, rgba(239, 68, 68, 0.4) 0%, rgba(220, 38, 38, 0.6) 30%, rgba(185, 28, 28, 0.7) 50%, rgba(220, 38, 38, 0.6) 70%, rgba(239, 68, 68, 0.4) 100%)'
+                    : 'linear-gradient(to right, rgba(134, 239, 172, 0.4) 0%, rgba(74, 222, 128, 0.6) 30%, rgba(34, 197, 94, 0.7) 50%, rgba(74, 222, 128, 0.6) 70%, rgba(134, 239, 172, 0.4) 100%)'
                 }}
               />
             </div>
 
             <div className="relative z-10 flex items-center justify-between px-6 py-6">
               <div className="flex items-center gap-4">
-                <svg className="w-16 h-16 text-black drop-shadow-lg" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                <span className="text-6xl font-bold text-black drop-shadow-lg">Ok</span>
+                {(sensorData.temperatura !== null && sensorData.temperatura > soglie.temperaturaMax) ||
+                  (sensorData.peso !== null && sensorData.peso < soglie.pesoMin) ? (
+                  <>
+                    <svg className="w-16 h-16 text-black drop-shadow-lg" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                    <span className="text-6xl font-bold text-black drop-shadow-lg">Pericolo!</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-16 h-16 text-black drop-shadow-lg" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    <span className="text-6xl font-bold text-black drop-shadow-lg">Ok</span>
+                  </>
+                )}
               </div>
 
               <div className="text-right">
@@ -488,14 +528,14 @@ function DashboardApiario({ selectedId, setSelectedId, onNavigateToTaratura, onL
                     <Legend />
 
                     <ReferenceLine
-                      y={sogliaTemperaturaMax}
+                      y={soglie.temperaturaMax}
                       stroke="#ef4444"
                       strokeDasharray="3 3"
                       label={{ value: 'Soglia di temperatura', position: 'insideTopLeft', fill: '#000', fontWeight: 'normal' }}
                     />
 
                     <ReferenceLine
-                      y={sogliaPesoMin}
+                      y={soglie.pesoMin}
                       stroke="#6b7280"
                       strokeDasharray="3 3"
                       label={{ value: 'Soglia di peso', position: 'insideBottomLeft', fill: '#000', fontWeight: 'normal' }}
@@ -539,28 +579,28 @@ function DashboardApiario({ selectedId, setSelectedId, onNavigateToTaratura, onL
 
             <div className="lg:col-span-2 bg-white/90 rounded-3xl shadow-lg backdrop-blur-md p-8">
               <h3 className="font-bold text-2xl mb-6">Notifiche</h3>
-              {sensorData.temperatura !== null && sensorData.temperatura > sogliaTemperaturaMax ? (
+              {sensorData.temperatura !== null && sensorData.temperatura > soglie.temperaturaMax ? (
                 <div className="bg-red-100 rounded-2xl p-6 flex items-start gap-4 mb-4">
                   <IconaAvviso className="w-8 h-8 mt-1 text-red-600" />
                   <div>
                     <p className="font-bold text-lg text-black">Temperatura Elevata</p>
-                    <p className="text-black font-normal">La temperatura ha superato la soglia massima di {sogliaTemperaturaMax}°C</p>
+                    <p className="text-black font-normal">La temperatura ha superato la soglia massima di {soglie.temperaturaMax}°C</p>
                   </div>
                 </div>
               ) : null}
 
-              {sensorData.peso !== null && sensorData.peso < sogliaPesoMin ? (
+              {sensorData.peso !== null && sensorData.peso < soglie.pesoMin ? (
                 <div className="bg-amber-200 rounded-2xl p-6 flex items-start gap-4">
                   <IconaAvviso className="w-8 h-8 mt-1 text-orange-600" />
                   <div>
                     <p className="font-bold text-lg text-black">Peso Basso</p>
-                    <p className="text-black font-normal">Il peso è sceso sotto la soglia minima di {sogliaPesoMin} Kg</p>
+                    <p className="text-black font-normal">Il peso è sceso sotto la soglia minima di {soglie.pesoMin} Kg</p>
                   </div>
                 </div>
               ) : null}
 
-              {(!sensorData.temperatura || sensorData.temperatura <= sogliaTemperaturaMax) &&
-                (!sensorData.peso || sensorData.peso >= sogliaPesoMin) && (
+              {(!sensorData.temperatura || sensorData.temperatura <= soglie.temperaturaMax) &&
+                (!sensorData.peso || sensorData.peso >= soglie.pesoMin) && (
                   <div className="bg-green-100 rounded-2xl p-6 flex items-center gap-4">
                     <svg className="w-8 h-8 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />

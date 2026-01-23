@@ -37,8 +37,8 @@ function SidebarApiario({ selectedId, setSelectedId, onNavigateToTaratura, onLog
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const API_URL = 'https://norimbergamaxima-e90d.restdb.io/rest';
-  const API_KEY = '697209fd3731f74dc33fd839';
+  const API_URL = 'https://pumbastilizzato-e441.restdb.io/rest';
+  const API_KEY = '69733a6b3731f70ae53fd875';
 
   // Carica le arnie all'avvio
   useEffect(() => {
@@ -104,7 +104,7 @@ function SidebarApiario({ selectedId, setSelectedId, onNavigateToTaratura, onLog
   const handleTaraturaClick = () => {
     // 1. Trova l'oggetto arnia completo basandosi sull'ID selezionato
     const arniaSelezionata = apiaries.find(a => a.id === selectedId);
-    
+
     if (arniaSelezionata) {
       console.log("Invio alla taratura:", arniaSelezionata);
       // 2. Passa l'oggetto COMPLETO alla funzione, non solo l'evento
@@ -135,7 +135,7 @@ function SidebarApiario({ selectedId, setSelectedId, onNavigateToTaratura, onLog
 
                 {/* Bottone impostazione (MODIFICATO) */}
                 <button
-                  onClick={handleTaraturaClick} 
+                  onClick={handleTaraturaClick}
                   className="p-2 rounded-full hover:bg-gray-200 transition"
                   disabled={loading || !selectedId}
                 >

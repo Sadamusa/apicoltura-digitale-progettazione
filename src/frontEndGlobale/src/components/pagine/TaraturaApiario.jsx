@@ -14,8 +14,8 @@ function TaraturaApiario({ selectedArnia, onBackToSidebar }) {
   const [sensors, setSensors] = useState({});
   const [loading, setLoading] = useState(false);
 
-  const API_URL = 'https://norimbergamaxima-e90d.restdb.io/rest';
-  const API_KEY = '697209fd3731f74dc33fd839';
+  const API_URL = 'https://pumbastilizzato-e441.restdb.io/rest';
+  const API_KEY = '69733a6b3731f70ae53fd875';
 
   // ID TIPI SENSORI
   const SENSOR_TYPES = {
