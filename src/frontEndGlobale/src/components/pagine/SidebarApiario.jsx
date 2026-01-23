@@ -37,8 +37,8 @@ function SidebarApiario({ selectedId, setSelectedId, onNavigateToTaratura, onLog
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const API_URL = 'https://databasesagomato2316-f801.restdb.io/rest'; // Assicurati di avere /rest alla fine se usi questa APIKey
-  const API_KEY = '6971f2593731f762e33fd827';
+  const API_URL = 'https://norimbergamaxima-e90d.restdb.io/rest';
+  const API_KEY = '697209fd3731f74dc33fd839';
 
   // Carica le arnie all'avvio
   useEffect(() => {

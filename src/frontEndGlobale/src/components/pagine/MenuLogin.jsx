@@ -5,7 +5,7 @@ import iconaAlveare from '../../assets/icona_alveare.svg';
 function MenuLogin({ onLoginSuccess }) {
   const [apiKey, setApiKey] = useState('');
 
-  const api = '6971db543731f717573fd80a';
+  const api = '697209fd3731f74dc33fd839';
 
   const handleLogin = () => {
     if (apiKey === api) {
